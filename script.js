@@ -1,41 +1,42 @@
-document.addEventListener('DOMContentLoaded', function () {
-  const select = document.getElementById('location-select');
-  const forecastDiv = document.getElementById('forecast');
 
-  function getWeather(lat, lon) {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto`;
+const icaoSelect = document.getElementById('icao-select');
+const airportName = document.getElementById('airport-name');
+const metarEl = document.getElementById('metar');
+const tafEl = document.getElementById('taf');
 
-    forecastDiv.innerHTML = '<p>Loading...</p>';
+const airportMap = {
+  'KMIA': 'Miami, FL (KMIA)',
+  'KATL': 'Atlanta, GA (KATL)',
+  'KMSY': 'New Orleans, LA (KMSY)',
+  'KDFW': 'Dallas/Fort Worth, TX (KDFW)',
+  'KBNA': 'Nashville, TN (KBNA)',
+  'KSDF': 'Louisville, KY (KSDF)',
+  'MMMX': 'Mexico City, MX (MMMX)',
+  'MGGT': 'Guatemala City, GT (MGGT)',
+  'MUHA': 'Havana, CU (MUHA)',
+  'TJSJ': 'San Juan, PR (TJSJ)'
+};
 
-    fetch(url)
-      .then(response => response.json())
-      .then(data => {
-        const daily = data.daily;
-        const todayIndex = 0;
+const API_KEY = 'DEMO_KEY'; // Replace with your real AVWX API key
+const headers = { Authorization: `Bearer ${API_KEY}` };
 
-        const html = `
-          <p><strong>Date:</strong> ${daily.time[todayIndex]}</p>
-          <p><strong>Max Temp:</strong> ${daily.temperature_2m_max[todayIndex]}°C</p>
-          <p><strong>Min Temp:</strong> ${daily.temperature_2m_min[todayIndex]}°C</p>
-          <p><strong>Precipitation:</strong> ${daily.precipitation_sum[todayIndex]} mm</p>
-        `;
+function fetchWeather(icao) {
+  fetch(`https://avwx.rest/api/metar/${icao}?format=json`, { headers })
+    .then(res => res.json()).then(data => {
+      metarEl.textContent = data.raw || 'No METAR available.';
+    }).catch(() => metarEl.textContent = 'Error loading METAR.');
 
-        forecastDiv.innerHTML = html;
-      })
-      .catch(error => {
-        forecastDiv.innerHTML = `<p style="color: red;">Error fetching weather data.</p>`;
-        console.error('Weather API error:', error);
-      });
-  }
+  fetch(`https://avwx.rest/api/taf/${icao}?format=json`, { headers })
+    .then(res => res.json()).then(data => {
+      tafEl.textContent = data.raw || 'No TAF available.';
+    }).catch(() => tafEl.textContent = 'Error loading TAF.');
+}
 
-  function onLocationChange() {
-    const [lat, lon] = select.value.split(',');
-    getWeather(lat, lon);
-  }
-
-  select.addEventListener('change', onLocationChange);
-
-  // Initial load
-  onLocationChange();
+icaoSelect.addEventListener('change', () => {
+  const selected = icaoSelect.value;
+  airportName.textContent = airportMap[selected];
+  fetchWeather(selected);
 });
-  
+
+// Load default
+fetchWeather(icaoSelect.value);

@@ -1,106 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Regional Weather Forecast</title>
-  <link rel="stylesheet" href="style.css">
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      margin: 0;
-      background-color: #f4f9fc;
-      color: #1e3a5f;
-    }
-
-    header {
-      background-color: #1e3a5f;
-      color: white;
-      text-align: center;
-      padding: 2rem;
-    }
-
-    header h1 {
-      margin: 0 0 0.5rem;
-      font-size: 2rem;
-    }
-
-    header p {
-      font-size: 1rem;
-      margin: 0;
-    }
-
-    main {
-      padding: 2rem;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-    }
-
-    #weather {
-      background: white;
-      padding: 1.5rem 2rem;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      width: 100%;
-      max-width: 500px;
-    }
-
-    #weather h2 {
-      color: #165a9c;
-      margin-top: 0;
-    }
-
-    #location-select {
-      margin-bottom: 1.5rem;
-      padding: 0.5rem;
-      font-size: 1rem;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      width: 100%;
-      max-width: 300px;
-    }
-
-    footer {
-      background-color: #e2ecf7;
-      text-align: center;
-      padding: 1rem;
-      margin-top: 2rem;
-      font-size: 0.9rem;
-      color: #3b5975;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aviation Weather Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
-  <header>
-    <h1>Regional Weather Forecast</h1>
-    <p>Tracking weather for the U.S., Mexico, Central America, and the Caribbean</p>
-  </header>
+  <div id="sidebar">
+    <h1>Flight Weather</h1>
+    <label for="icao-select">Select Airport:</label>
+    <select id="icao-select">
+      <option value="KMIA">Miami, FL (KMIA)</option>
+      <option value="KATL">Atlanta, GA (KATL)</option>
+      <option value="KMSY">New Orleans, LA (KMSY)</option>
+      <option value="KDFW">Dallas/Fort Worth, TX (KDFW)</option>
+      <option value="KBNA">Nashville, TN (KBNA)</option>
+      <option value="KSDF">Louisville, KY (KSDF)</option>
+      <option value="MMMX">Mexico City, MX (MMMX)</option>
+      <option value="MGGT">Guatemala City, GT (MGGT)</option>
+      <option value="MUHA">Havana, CU (MUHA)</option>
+      <option value="TJSJ">San Juan, PR (TJSJ)</option>
+    </select>
+    <div class="weather-info">
+      <h2 id="airport-name">Miami, FL (KMIA)</h2>
+      <p><strong>METAR:</strong></p>
+      <pre id="metar">Loading...</pre>
+      <p><strong>TAF:</strong></p>
+      <pre id="taf">Loading...</pre>
+    </div>
+  </div>
 
-  <main>
-    <section id="weather">
-      <h2>Today's Forecast</h2>
-
-      <select id="location-select">
-        <option value="24.55,-81.78">Key West, FL</option>
-        <option value="19.43,-99.13">Mexico City, MX</option>
-        <option value="14.64,-90.51">Guatemala City, GT</option>
-        <option value="18.47,-69.90">Santo Domingo, DO</option>
-        <option value="25.77,-80.19">Miami, FL</option>
-      </select>
-
-      <div id="forecast">
-        <p>Loading...</p>
-      </div>
-    </section>
-  </main>
-
-  <footer>
-    <p>Powered by Open-Meteo | Built by Altitude House Consulting</p>
-  </footer>
+  <div id="map-container">
+    <iframe
+      id="windy"
+      width="100%"
+      height="100%"
+      frameborder="0"
+      src="https://embed.windy.com/embed2.html?lat=23.5&lon=-81&zoom=5&level=surface&overlay=wind&menu=&message=true&marker=&calendar=now&type=map&location=coordinates&metricWind=kt&metricTemp=%C2%B0C"
+    ></iframe>
+  </div>
 
   <script src="script.js"></script>
 </body>
 </html>
-
