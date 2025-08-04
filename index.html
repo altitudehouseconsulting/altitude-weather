@@ -52,6 +52,16 @@
       margin-top: 0;
     }
 
+    #location-select {
+      margin-bottom: 1.5rem;
+      padding: 0.5rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      width: 100%;
+      max-width: 300px;
+    }
+
     footer {
       background-color: #e2ecf7;
       text-align: center;
@@ -71,6 +81,15 @@
   <main>
     <section id="weather">
       <h2>Today's Forecast</h2>
+
+      <select id="location-select">
+        <option value="24.55,-81.78">Key West, FL</option>
+        <option value="19.43,-99.13">Mexico City, MX</option>
+        <option value="14.64,-90.51">Guatemala City, GT</option>
+        <option value="18.47,-69.90">Santo Domingo, DO</option>
+        <option value="25.77,-80.19">Miami, FL</option>
+      </select>
+
       <div id="forecast">
         <p>Loading...</p>
       </div>
@@ -84,3 +103,4 @@
   <script src="script.js"></script>
 </body>
 </html>
+
