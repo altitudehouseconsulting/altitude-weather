@@ -18,7 +18,7 @@ const airportMap = {
 };
 
 const API_KEY = 'DEMO_KEY'; // Replace with your real AVWX API key
-const headers = { Authorization: `Bearer ${API_KEY}` };
+const headers = { Authorization: `glW3LNiEIa1bKVWjgjg_U4RcbAdhusDhO6JOwN9rLbM` };
 
 function fetchWeather(icao) {
   fetch(`https://avwx.rest/api/metar/${icao}?format=json`, { headers })
