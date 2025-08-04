@@ -17,8 +17,8 @@ const airportMap = {
   'TJSJ': 'San Juan, PR (TJSJ)'
 };
 
-const API_KEY = 'DEMO_KEY'; // Replace with your real AVWX API key
-const headers = { Authorization: `glW3LNiEIa1bKVWjgjg_U4RcbAdhusDhO6JOwN9rLbM` };
+const API_KEY = 'glW3LNiEIa1bKVWjgjg_U4RcbAdhusDhO6JOwN9rLbM';
+const headers = {Authorization: `Bearer ${API_KEY}`};
 
 function fetchWeather(icao) {
   fetch(`https://avwx.rest/api/metar/${icao}?format=json`, { headers })
