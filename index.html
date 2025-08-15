@@ -1,48 +1,486 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Aviation Weather Dashboard</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-</head>
-<body>
-  <div id="sidebar">
-    <h1>Flight Weather</h1>
-    <label for="icao-select">Select Airport:</label>
-    <select id="icao-select">
-      <option value="KMIA">Miami, FL (KMIA)</option>
-      <option value="KATL">Atlanta, GA (KATL)</option>
-      <option value="KMSY">New Orleans, LA (KMSY)</option>
-      <option value="KDFW">Dallas/Fort Worth, TX (KDFW)</option>
-      <option value="KBNA">Nashville, TN (KBNA)</option>
-      <option value="KSDF">Louisville, KY (KSDF)</option>
-      <option value="MMMX">Mexico City, MX (MMMX)</option>
-      <option value="MGGT">Guatemala City, GT (MGGT)</option>
-      <option value="MUHA">Havana, CU (MUHA)</option>
-      <option value="TJSJ">San Juan, PR (TJSJ)</option>
-    </select>
-    <div class="weather-info">
-      <h2 id="airport-name">Miami, FL (KMIA)</h2>
-      <p><strong>METAR:</strong></p>
-      <pre id="metar">Loading...</pre>
-      <p><strong>TAF:</strong></p>
-      <pre id="taf">Loading...</pre>
-    </div>
-  </div>
+  <head>
+    <!--
+      ======================================================================================
+      Altitude Aviation Weather — Central Florida Airports (Single‑file HTML)
+      --------------------------------------------------------------------------------------
+      Matches your image‑first model while adding a LEFT sidebar that:
+        • Lists Central Florida airports (ICAO)
+        • On click: fetches live METAR + TAF from NOAA ADDS (no API key required)
+        • Renders easy‑to‑read TABLES (decoded fields) for METAR and TAF
+      Notes:
+        • Data source: https://aviationweather.gov/dataserver (ADDS) — JSON, no key.
+        • CORS is typically enabled. If it’s blocked by your hosting, a tiny proxy may be needed.
+        • All code is commented (per your preference) and uses NO external libraries.
+        • Drop in / deploy as index.html on GitHub Pages or Netlify.
 
-  <div id="map-container">
-    <iframe
-      id="windy"
-      width="100%"
-      height="100%"
-      frameborder="0"
-      src="https://embed.windy.com/embed2.html?lat=23.5&lon=-81&zoom=5&level=surface&overlay=wind&menu=&message=true&marker=&calendar=now&type=map&location=coordinates&metricWind=kt&metricTemp=%C2%B0C"
-    ></iframe>
-  </div>
+      TODOs:
+        1) Replace placeholder hero image + brand.
+        2) Add/remove airports in the AIRPORTS array as needed.
+        3) If you later want map overlays, we can bolt on Leaflet or Mapbox.
+      ======================================================================================
+    -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Altitude Aviation Weather — Central Florida Airports</title>
+    <meta name="description" content="Central Florida aviation weather. Click an airport to see METAR & TAF decoded into tables." />
 
-  <script src="script.js"></script>
-</body>
+    <!-- ================= Brand & Theme Variables ================= -->
+    <style>
+      :root{
+        /* === Brand blues (aligns with your other pages) === */
+        --brand-900:#0b1f4a; --brand-800:#132b63; --brand-700:#1e3a8a; --brand-600:#2148a3;
+        --brand-500:#2563eb; --brand-400:#3b82f6; --brand-300:#60a5fa; --brand-200:#93c5fd;
+        --cyan-500:#0ea5e9;
+        /* === Neutrals === */
+        --ink-900:#0f172a; --ink-800:#1f2937; --ink-700:#334155; --ink-600:#475569; --ink-500:#64748b;
+        --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --surface:#ffffff; --bg:#f8fafc;
+        /* === Radii & Shadows === */
+        --radius-xl: 18px; --radius-lg: 14px; --radius-md: 10px; --radius-sm: 8px;
+        --shadow-lg: 0 20px 40px rgba(2,6,23,0.12); --shadow-md: 0 10px 20px rgba(2,6,23,0.10); --shadow-sm: 0 4px 10px rgba(2,6,23,0.08);
+        --container: 1180px;
+      }
+
+      /* ===== Base ===== */
+      *{box-sizing:border-box}
+      html,body{height:100%}
+      body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:var(--ink-700);background:var(--bg);line-height:1.6}
+      img{max-width:100%;display:block;border-radius:var(--radius-lg)}
+      a{color:var(--brand-600);text-decoration:none}
+      a:hover{text-decoration:underline}
+      .container{width:92%;max-width:var(--container);margin-inline:auto}
+      .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:999px;padding:.72rem 1rem;font-weight:600;text-decoration:none;transition:transform .06s ease,box-shadow .2s ease;cursor:pointer}
+      .btn:hover{transform:translateY(-1px);text-decoration:none}
+      .btn-primary{background:linear-gradient(135deg,var(--brand-600),var(--brand-400));color:#fff;box-shadow:var(--shadow-md)}
+      .btn-outline{border:1.5px solid var(--brand-300);color:var(--brand-700);background:#fff}
+      .pill{display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .6rem;border-radius:999px;background:#eef2ff;color:var(--brand-700);font-weight:600;font-size:.8rem}
+      .tag{display:inline-block;padding:.35rem .7rem;border-radius:999px;background:linear-gradient(135deg,var(--brand-200),#e0f2fe);color:var(--brand-700);font-weight:600;font-size:.85rem}
+      h1,h2,h3{color:var(--ink-900)}
+
+      /* ===== Header / Nav ===== */
+      header{position:sticky;top:0;z-index:50;backdrop-filter:saturate(180%) blur(8px);background:rgba(255,255,255,.85);border-bottom:1px solid var(--ink-200)}
+      .nav{display:flex;align-items:center;justify-content:space-between;padding:.9rem 0}
+      .brand{display:flex;align-items:center;gap:.8rem;font-weight:800;letter-spacing:.1px;color:var(--brand-700)}
+      .brand .logo{width:42px;height:42px;border-radius:12px;background:conic-gradient(from 210deg at 50% 50%,var(--brand-400),var(--brand-700),var(--cyan-500));box-shadow:inset 0 0 0 2px rgba(255,255,255,.7),var(--shadow-sm)}
+      .nav-links{display:flex;gap:1rem;align-items:center}
+      .hamburger{display:none;border:0;background:transparent}
+      .hamburger span{display:block;width:26px;height:3px;background:var(--brand-700);margin:.32rem 0;border-radius:3px}
+      @media (max-width:900px){.nav-links{display:none}.hamburger{display:block}#mobileMenu{display:none;position:absolute;inset:100% 0 auto 0;background:#fff;border-bottom:1px solid var(--ink-200);box-shadow:var(--shadow-sm)}#mobileMenu a{display:block;padding:1rem 1.2rem;border-bottom:1px solid var(--ink-200)}}
+
+      /* ===== Hero ===== */
+      .hero{position:relative;padding:5rem 0 2rem;overflow:clip}
+      .hero::before{content:"";position:absolute;inset:0;background:
+        linear-gradient(180deg,rgba(11,31,74,.78) 10%,rgba(11,31,74,.40) 45%,rgba(248,250,252,.0) 100%),
+        url('https://images.unsplash.com/photo-1517976487492-576ea6b2936b?q=80&w=1600&auto=format&fit=crop') center/cover no-repeat; /* TODO: replace */
+        filter:saturate(1.05)}
+      .hero .content{position:relative;color:#fff;padding-top:1.25rem}
+      .eyebrow{font-size:.9rem;letter-spacing:.12em;text-transform:uppercase;opacity:.92}
+      h1{font-size:clamp(2rem,5vw,3.2rem);line-height:1.1;margin:.4rem 0 1rem;color:#fff}
+      .lead{font-size:clamp(1rem,1.6vw,1.2rem);color:#eef2ff;max-width:60ch}
+
+      /* ===== Page Layout: Sidebar + Main ===== */
+      .page{display:grid;grid-template-columns: 330px 1fr; gap:1rem; align-items:start;}
+      @media (max-width: 980px){ .page{ grid-template-columns: 1fr; } }
+
+      /* ===== Sidebar ===== */
+      .sidebar{position:sticky; top:88px; align-self:start; background:#fff; border:1px solid var(--ink-200); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); overflow:hidden;}
+      .side-h{padding:1rem; border-bottom:1px solid var(--ink-200);}
+      .airport-search{display:flex; gap:.5rem;}
+      .airport-search input{flex:1; border:1px solid var(--ink-300); border-radius:10px; padding:.5rem .7rem;}
+      .airport-list{max-height:420px; overflow:auto;}
+      .airport-list button{width:100%; text-align:left; padding:.6rem .85rem; border:0; background:#fff; border-bottom:1px solid var(--ink-200); cursor:pointer;}
+      .airport-list button:hover{background:#f8fafc}
+      .airport-list button.active{background:linear-gradient(135deg,var(--brand-100,#eff6ff),#fff)}
+
+      /* ===== METAR/TAF tables card ===== */
+      .wx-card{background:#fff; border:1px solid var(--ink-200); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm);}
+      .wx-h{padding:1rem; border-bottom:1px solid var(--ink-200); display:flex; justify-content:space-between; align-items:center}
+      .wx-body{padding:1rem}
+      table{width:100%; border-collapse:collapse}
+      th, td{border-bottom:1px solid var(--ink-200); padding:.45rem .3rem; text-align:left; vertical-align:top}
+      th{color:var(--ink-900); width:42%}
+      td{color:var(--ink-700)}
+      .muted{color:var(--ink-600)}
+      .grid{display:grid; grid-template-columns: repeat(2, 1fr); gap:1rem}
+      @media (max-width: 700px){ .grid{ grid-template-columns: 1fr } }
+
+      /* ===== Main content area ===== */
+      .main{display:grid; gap:1rem}
+      .panel{background:#fff; border:1px solid var(--ink-200); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm)}
+      .panel .hdr{padding:1rem; border-bottom:1px solid var(--ink-200)}
+      .panel .bd{padding:1rem}
+      .raw{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background:#f8fafc; border:1px dashed var(--ink-300); border-radius: 10px; padding:.6rem}
+
+      /* ===== Footer ===== */
+      footer{padding:2rem 0 2.6rem; color: var(--ink-600)}
+      :focus-visible{outline:3px solid var(--cyan-500); outline-offset:2px; border-radius:6px}
+    </style>
+  </head>
+  <body>
+    <!-- ================= Header & Navigation ================= -->
+    <header>
+      <div class="container nav" role="navigation" aria-label="Main">
+        <a class="brand" href="#top" aria-label="Go to top">
+          <div class="logo" aria-hidden="true"></div>
+          <span>Altitude — Aviation Weather (Central FL)</span>
+        </a>
+        <nav class="nav-links" aria-label="Primary">
+          <a href="#wx">Airports</a>
+          <a href="#about">About</a>
+        </nav>
+        <button class="hamburger" id="hamburger" aria-controls="mobileMenu" aria-expanded="false" aria-label="Open menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+      <div id="mobileMenu" class="container" role="menu" aria-label="Mobile">
+        <a href="#wx" role="menuitem">Airports</a>
+        <a href="#about" role="menuitem">About</a>
+      </div>
+    </header>
+
+    <!-- ================= Hero ================= -->
+    <section class="hero" id="top" aria-label="Hero">
+      <div class="container content">
+        <span class="eyebrow">METAR • TAF • Central Florida</span>
+        <h1>Tap an airport. Readable weather, fast decisions.</h1>
+        <p class="lead">Left side: pick an airport. We fetch METAR & TAF and translate them into simple tables with key fields, plus the raw report when you need it.</p>
+      </div>
+    </section>
+
+    <!-- ================= Weather App (Sidebar + Main) ================= -->
+    <section id="wx" aria-labelledby="wx-h" style="padding:2rem 0 3rem;">
+      <div class="container page">
+        <!-- ===== Left Sidebar: Airport list + METAR/TAF tables ===== -->
+        <aside class="sidebar" aria-label="Airport selection & decoded weather">
+          <div class="side-h">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:.6rem">
+              <strong>Airports</strong>
+              <span id="lastUpdated" class="muted" style="font-size:.85rem"></span>
+            </div>
+            <div class="airport-search" style="margin-top:.5rem">
+              <input id="search" type="search" placeholder="Search ICAO or city…" aria-label="Search airports" />
+              <button class="btn btn-outline" id="refresh" title="Refresh current airport">↻</button>
+            </div>
+          </div>
+          <div id="airportList" class="airport-list" role="listbox" aria-label="Central Florida airports"></div>
+
+          <!-- Decoded METAR card -->
+          <div class="wx-card" style="margin:1rem;" aria-live="polite">
+            <div class="wx-h"><strong>METAR</strong><small id="metarTime" class="muted"></small></div>
+            <div id="metarBody" class="wx-body">
+              <p class="muted" style="margin:0">Select an airport to load METAR…</p>
+            </div>
+          </div>
+
+          <!-- Decoded TAF card -->
+          <div class="wx-card" style="margin:1rem;" aria-live="polite">
+            <div class="wx-h"><strong>TAF</strong><small id="tafTime" class="muted"></small></div>
+            <div id="tafBody" class="wx-body">
+              <p class="muted" style="margin:0">Select an airport to load TAF…</p>
+            </div>
+          </div>
+        </aside>
+
+        <!-- ===== Main content: quick status, raw text, notes ===== -->
+        <main class="main">
+          <!-- Airport status panel -->
+          <section class="panel">
+            <div class="hdr"><strong id="statusTitle">Airport status</strong></div>
+            <div class="bd" id="statusBody">
+              <p class="muted" style="margin:0">Pick an airport from the left to see flight category, winds, ceilings, and visibility at a glance.</p>
+            </div>
+          </section>
+
+          <!-- Raw METAR / TAF text panel -->
+          <section class="panel">
+            <div class="hdr"><strong>Raw reports</strong></div>
+            <div class="bd">
+              <div style="display:grid; gap:1rem">
+                <div>
+                  <div class="pill">METAR raw</div>
+                  <pre id="rawMetar" class="raw" style="white-space:pre-wrap">—</pre>
+                </div>
+                <div>
+                  <div class="pill">TAF raw</div>
+                  <pre id="rawTaf" class="raw" style="white-space:pre-wrap">—</pre>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- About / help panel -->
+          <section class="panel" id="about">
+            <div class="hdr"><strong>About this page</strong></div>
+            <div class="bd">
+              <ul>
+                <li>Data from NOAA ADDS (aviationweather.gov) — no API key required.</li>
+                <li>Times are shown in local browser time; source times are UTC.</li>
+                <li>If CORS blocks requests on your host, we can add a tiny proxy or switch to AVWX with a restricted key.</li>
+              </ul>
+            </div>
+          </section>
+        </main>
+      </div>
+    </section>
+
+    <!-- ================= Footer ================= -->
+    <footer role="contentinfo">
+      <div class="container" style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:center;">
+        <div class="brand" style="gap:.6rem;">
+          <div class="logo" aria-hidden="true"></div>
+          <div><strong>Altitude Aviation Weather</strong><br><small>© <span id="year"></span></small></div>
+        </div>
+        <div class="socials"><a href="#">🔗</a><a href="#">🔗</a><a href="#">🔗</a></div>
+      </div>
+    </footer>
+
+    <!-- ================= Scripts (No external libs) ================= -->
+    <script>
+      // =====================================================================================
+      // DATA: Central Florida airports (edit this list as needed)
+      // =====================================================================================
+      const AIRPORTS = [
+        { icao:'KMCO', name:'Orlando International', city:'Orlando' },
+        { icao:'KSFB', name:'Orlando Sanford International', city:'Sanford' },
+        { icao:'KORL', name:'Orlando Executive', city:'Orlando' },
+        { icao:'KISM', name:'Kissimmee Gateway', city:'Kissimmee' },
+        { icao:'KDAB', name:'Daytona Beach International', city:'Daytona Beach' },
+        { icao:'KMLB', name:'Melbourne Orlando International', city:'Melbourne' },
+        { icao:'KLEE', name:'Leesburg International', city:'Leesburg' },
+        { icao:'KDED', name:'DeLand Municipal', city:'DeLand' },
+        { icao:'KOCF', name:'Ocala International', city:'Ocala' },
+        { icao:'KXFL', name:'Flagler Executive', city:'Palm Coast' },
+        { icao:'KLAL', name:'Lakeland Linder International', city:'Lakeland' },
+        { icao:'KTIX', name:'Space Coast Regional', city:'Titusville' },
+        { icao:'KEVB', name:'New Smyrna Beach Municipal', city:'New Smyrna Beach' },
+        { icao:'KSGJ', name:'Northeast Florida Regional', city:'St. Augustine' }
+      ];
+
+      // =====================================================================================
+      // Helpers: DOM, formatting, unit conversions
+      // =====================================================================================
+      const $ = sel => document.querySelector(sel);
+      const $$ = sel => Array.from(document.querySelectorAll(sel));
+      const pad2 = n => String(n).padStart(2,'0');
+      const ktToMph = kt => Math.round(Number(kt||0) * 1.15078);
+      const cToF = c => Math.round((Number(c||0) * 9/5) + 32);
+      const inHgToHPa = inhg => Math.round(Number(inhg||0) * 33.8639);
+      const smToKm = sm => Math.round(Number(sm||0) * 1.60934);
+      const fmt = (v, unit='') => (v===undefined || v===null || v==='') ? '—' : `${v}${unit}`;
+      const asLocal = isoOrZulu => {
+        try{ const d = new Date(isoOrZulu); return d.toLocaleString(); }catch{ return String(isoOrZulu||''); }
+      };
+
+      // =====================================================================================
+      // NOAA ADDS (aviationweather.gov) endpoints — JSON (no API key required)
+      // =====================================================================================
+      // METAR: docs → /adds/dataserver_current/httpparam?dataSource=metars&...
+      const ADDS_METAR = (icao) => `https://aviationweather.gov/adds/dataserver_current/httpparam?`+
+        new URLSearchParams({ dataSource:'metars', requestType:'retrieve', format:'JSON', stations:icao, hoursBeforeNow:'3' });
+      // TAF: docs → /adds/dataserver_current/httpparam?dataSource=tafs&...
+      const ADDS_TAF = (icao) => `https://aviationweather.gov/adds/dataserver_current/httpparam?`+
+        new URLSearchParams({ dataSource:'tafs', requestType:'retrieve', format:'JSON', stationString:icao, hoursBeforeNow:'6', timeType:'issue' });
+
+      // =====================================================================================
+      // UI: Airport list + search
+      // =====================================================================================
+      const listEl = $('#airportList');
+      const searchEl = $('#search');
+      const lastUpdatedEl = $('#lastUpdated');
+      let currentICAO = localStorage.getItem('last-icao') || 'KSFB';
+
+      function renderAirportList(){
+        // Filter by search (ICAO or city)
+        const q = searchEl.value.trim().toLowerCase();
+        const filtered = AIRPORTS.filter(a => !q || a.icao.toLowerCase().includes(q) || a.city.toLowerCase().includes(q) || a.name.toLowerCase().includes(q));
+        listEl.innerHTML = filtered.map(a => `
+          <button role="option" aria-selected="${a.icao===currentICAO}" class="${a.icao===currentICAO?'active':''}" data-icao="${a.icao}">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:.6rem">
+              <div>
+                <div style="font-weight:700;color:var(--ink-900)">${a.icao}</div>
+                <div class="muted" style="font-size:.9rem">${a.name}</div>
+              </div>
+              <div class="pill">${a.city}</div>
+            </div>
+          </button>`).join('');
+      }
+
+      // Handle clicks on airport buttons
+      listEl.addEventListener('click', (e)=>{
+        const btn = e.target.closest('button[data-icao]');
+        if (!btn) return;
+        currentICAO = btn.getAttribute('data-icao');
+        localStorage.setItem('last-icao', currentICAO);
+        $$('#airportList button').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        loadAll(currentICAO);
+      });
+      searchEl.addEventListener('input', renderAirportList);
+
+      // =====================================================================================
+      // Fetch + render METAR & TAF
+      // =====================================================================================
+      const metarBody = $('#metarBody');
+      const tafBody = $('#tafBody');
+      const metarTime = $('#metarTime');
+      const tafTime = $('#tafTime');
+      const statusTitle = $('#statusTitle');
+      const statusBody = $('#statusBody');
+      const rawMetar = $('#rawMetar');
+      const rawTaf = $('#rawTaf');
+      const refreshBtn = $('#refresh');
+
+      refreshBtn.addEventListener('click', ()=> loadAll(currentICAO));
+
+      async function loadAll(icao){
+        // Show loading states
+        metarBody.innerHTML = '<p class="muted">Loading METAR…</p>';
+        tafBody.innerHTML = '<p class="muted">Loading TAF…</p>';
+        rawMetar.textContent = '…';
+        rawTaf.textContent = '…';
+        metarTime.textContent = '';
+        tafTime.textContent = '';
+        lastUpdatedEl.textContent = 'Updating…';
+
+        try{
+          const [metarRes, tafRes] = await Promise.all([
+            fetch(ADDS_METAR(icao)),
+            fetch(ADDS_TAF(icao))
+          ]);
+          const metarJson = await metarRes.json();
+          const tafJson = await tafRes.json();
+
+          renderMETAR(icao, metarJson);
+          renderTAF(icao, tafJson);
+          lastUpdatedEl.textContent = 'Updated ' + new Date().toLocaleTimeString();
+        } catch(err){
+          console.error(err);
+          metarBody.innerHTML = '<p style="color:#b91c1c">Failed to load METAR.</p>';
+          tafBody.innerHTML = '<p style="color:#b91c1c">Failed to load TAF.</p>';
+          statusBody.innerHTML = '<p style="color:#b91c1c">Network error. Try again.</p>';
+          lastUpdatedEl.textContent = 'Error';
+        }
+      }
+
+      // -------------------- METAR renderer --------------------
+      function renderMETAR(icao, json){
+        try{
+          const list = json?.response?.data?.METAR || [];
+          if (!list.length){ metarBody.innerHTML = '<p class="muted">No recent METAR.</p>'; return; }
+          const m = list[0];
+
+          // Raw
+          rawMetar.textContent = m.raw_text || '—';
+
+          // Time display
+          metarTime.textContent = m.observation_time ? ('Observed ' + asLocal(m.observation_time)) : '';
+
+          // Sky layers → readable string
+          const sky = Array.isArray(m.sky_condition) ? m.sky_condition : (m.sky_condition? [m.sky_condition] : []);
+          const skyLines = sky.map(s => `${s.sky_cover}${s.cloud_base_ft_agl?(' @ '+s.cloud_base_ft_agl+' ft AGL'):''}`);
+
+          // Build table HTML for METAR decoded
+          metarBody.innerHTML = `
+            <table aria-label="Decoded METAR">
+              <tbody>
+                <tr><th>Station</th><td>${m.station_id || icao}</td></tr>
+                <tr><th>Observed</th><td>${asLocal(m.observation_time)}</td></tr>
+                <tr><th>Flight Category</th><td><strong>${m.flight_category || '—'}</strong></td></tr>
+                <tr><th>Wind</th><td>${fmt(m.wind_dir_degrees,'°')} @ ${fmt(m.wind_speed_kt,' kt')} (${ktToMph(m.wind_speed_kt)} mph) ${m.wind_gust_kt?(' gust '+m.wind_gust_kt+' kt'):''}</td></tr>
+                <tr><th>Visibility</th><td>${fmt(m.visibility_statute_mi,' sm')} (${smToKm(m.visibility_statute_mi)} km)</td></tr>
+                <tr><th>Ceiling / Clouds</th><td>${skyLines.length? skyLines.join('<br>') : '—'}</td></tr>
+                <tr><th>Weather</th><td>${m.wx_string || '—'}</td></tr>
+                <tr><th>Temperature</th><td>${fmt(m.temp_c,'°C')} (${cToF(m.temp_c)}°F) • Dewpoint ${fmt(m.dewpoint_c,'°C')} (${cToF(m.dewpoint_c)}°F)</td></tr>
+                <tr><th>Altimeter</th><td>${fmt(m.altim_in_hg,' inHg')} (${inHgToHPa(m.altim_in_hg)} hPa)</td></tr>
+                <tr><th>Sea‑level Pressure</th><td>${m.sea_level_pressure_mb? (m.sea_level_pressure_mb+' mb') : '—'}</td></tr>
+              </tbody>
+            </table>`;
+
+          // Quick status panel (right side)
+          statusTitle.textContent = `${icao} — ${m.flight_category || '—'}`;
+          statusBody.innerHTML = `
+            <div class="grid">
+              <div>
+                <div class="pill">Wind</div>
+                <p style="margin:.2rem 0 .6rem">${fmt(m.wind_dir_degrees,'°')} @ ${fmt(m.wind_speed_kt,' kt')} ${m.wind_gust_kt?('(G'+m.wind_gust_kt+')'):''}</p>
+                <div class="pill">Visibility</div>
+                <p style="margin:.2rem 0 .6rem">${fmt(m.visibility_statute_mi,' sm')}</p>
+              </div>
+              <div>
+                <div class="pill">Ceiling/Clouds</div>
+                <p style="margin:.2rem 0 .6rem">${skyLines.length? skyLines.join(', ') : '—'}</p>
+                <div class="pill">Temp / Altimeter</div>
+                <p style="margin:.2rem 0 .6rem">${fmt(m.temp_c,'°C')} (${cToF(m.temp_c)}°F) • ${fmt(m.altim_in_hg,' inHg')}</p>
+              </div>
+            </div>`;
+        } catch(err){
+          console.error(err);
+          metarBody.innerHTML = '<p style="color:#b91c1c">Unable to parse METAR.</p>';
+        }
+      }
+
+      // -------------------- TAF renderer --------------------
+      function renderTAF(icao, json){
+        try{
+          const list = json?.response?.data?.TAF || [];
+          if (!list.length){ tafBody.innerHTML = '<p class="muted">No recent TAF.</p>'; rawTaf.textContent = '—'; return; }
+          const t = list[0];
+
+          // Raw
+          rawTaf.textContent = t.raw_text || '—';
+
+          // Time display
+          const issued = t.issue_time ? ('Issued ' + asLocal(t.issue_time)) : '';
+          const valid = (t.valid_time_from && t.valid_time_to) ? (`Valid ${asLocal(t.valid_time_from)} → ${asLocal(t.valid_time_to)}`) : '';
+          tafTime.textContent = [issued, valid].filter(Boolean).join(' • ');
+
+          // Forecast periods (array)
+          const f = Array.isArray(t.forecast) ? t.forecast : (t.forecast? [t.forecast] : []);
+          if (!f.length){ tafBody.innerHTML = '<p class="muted">No forecast periods found.</p>'; return; }
+
+          // Build cards for each period with a small table
+          tafBody.innerHTML = f.map(p => {
+            const sky = Array.isArray(p.sky_condition) ? p.sky_condition : (p.sky_condition? [p.sky_condition] : []);
+            const skyLines = sky.map(s => `${s.sky_cover}${s.cloud_base_ft_agl?(' @ '+s.cloud_base_ft_agl+' ft AGL'):''}`);
+            return `
+              <div style="border:1px solid var(--ink-200);border-radius:12px;padding:.6rem;margin-bottom:.6rem; background:#fff">
+                <div class="muted" style="font-weight:700">${asLocal(p.fcst_time_from)} → ${asLocal(p.fcst_time_to)}</div>
+                <table aria-label="TAF period">
+                  <tbody>
+                    <tr><th>Wind</th><td>${fmt(p.wind_dir_degrees,'°')} @ ${fmt(p.wind_speed_kt,' kt')} ${p.wind_gust_kt?('(G'+p.wind_gust_kt+')'):''}</td></tr>
+                    <tr><th>Visibility</th><td>${p.visibility_statute_mi? (p.visibility_statute_mi+' sm') : '—'}</td></tr>
+                    <tr><th>Weather</th><td>${p.wx_string || '—'}</td></tr>
+                    <tr><th>Clouds</th><td>${skyLines.length? skyLines.join('<br>') : '—'}</td></tr>
+                  </tbody>
+                </table>
+              </div>`;
+          }).join('');
+        } catch(err){
+          console.error(err);
+          tafBody.innerHTML = '<p style="color:#b91c1c">Unable to parse TAF.</p>';
+        }
+      }
+
+      // =====================================================================================
+      // Mobile nav + init
+      // =====================================================================================
+      const hamburger = document.getElementById('hamburger');
+      const mobileMenu = document.getElementById('mobileMenu');
+      hamburger?.addEventListener('click', () => {
+        const open = mobileMenu.style.display === 'block';
+        mobileMenu.style.display = open ? 'none' : 'block';
+        hamburger.setAttribute('aria-expanded', String(!open));
+      });
+      mobileMenu?.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+        mobileMenu.style.display = 'none';
+        hamburger.setAttribute('aria-expanded', 'false');
+      }));
+
+      // Initial render of airport list + initial load
+      document.getElementById('year').textContent = new Date().getFullYear();
+      renderAirportList();
+      loadAll(currentICAO);
+    </script>
+  </body>
 </html>
