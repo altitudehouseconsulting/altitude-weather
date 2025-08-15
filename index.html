@@ -276,11 +276,22 @@
       // NOAA ADDS (aviationweather.gov) endpoints — JSON (no API key required)
       // =====================================================================================
       // METAR: docs → /adds/dataserver_current/httpparam?dataSource=metars&...
-      const ADDS_METAR = (icao) => `https://aviationweather.gov/adds/dataserver_current/httpparam?`+
-        new URLSearchParams({ dataSource:'metars', requestType:'retrieve', format:'JSON', stations:icao, hoursBeforeNow:'3' });
+// METAR: use stationString + mostRecent
+const ADDS_METAR = (icao) =>
+  `https://aviationweather.gov/adds/dataserver_current/httpparam?` +
+  new URLSearchParams({
+    dataSource: 'metars',
+    requestType: 'retrieve',
+    format: 'JSON',
+    stationString: icao,      // <-- was "stations"
+    mostRecent: 'true',
+    hoursBeforeNow: '3'
+  });
       // TAF: docs → /adds/dataserver_current/httpparam?dataSource=tafs&...
       const ADDS_TAF = (icao) => `https://aviationweather.gov/adds/dataserver_current/httpparam?`+
-        new URLSearchParams({ dataSource:'tafs', requestType:'retrieve', format:'JSON', stationString:icao, hoursBeforeNow:'6', timeType:'issue' });
+        new URLSearchParams({ dataSource:'tafs', requestType:'retrieve', format:'JSON', stationString:icao, mostRecent: 'true',
+    hoursBeforeNow: '3'
+  });
 
       // =====================================================================================
       // UI: Airport list + search
