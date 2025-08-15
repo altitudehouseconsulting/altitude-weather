@@ -3,31 +3,35 @@
   <head>
     <!--
       ======================================================================================
-      Altitude Aviation Weather — Central Florida Airports (Single‑file HTML)
+      Altitude Aviation Weather — Central & Southwest Florida (Single‑file HTML)
       --------------------------------------------------------------------------------------
-      • Left sidebar: Central FL airports; click to fetch METAR/TAF from NOAA ADDS
-      • Main: at‑a‑glance status, map with markers, raw reports, and notes
-      • FIXED: ADDS METAR param now uses stationString + mostRecent
-      • ADDED: Leaflet map with airport markers and selection sync
-      • No external build tools; just drop in as index.html
-      ======================================================================================
+      • Left sidebar: filterable airport list (Central FL + West‑Central + Southwest FL)
+      • Click an airport → fetch live METAR & TAF from NOAA ADDS (no API key)
+      • Decoded, readable tables + raw text + a small Leaflet map with markers
+
+      NOTES
+      - Data source: https://aviationweather.gov/adds/dataserver_current (ADDS)
+      - CORS is typically allowed. If your host blocks it, we can add a tiny proxy
+        or switch to AVWX with a restricted key later.
+      - All code is plain HTML/CSS/JS; no build tools required.
+    ======================================================================================
     -->
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Altitude Aviation Weather — Central Florida Airports</title>
-    <meta name="description" content="Central Florida aviation weather. Click an airport to see METAR & TAF decoded into tables, plus a quick map." />
+    <title>Altitude Aviation Weather — Central & Southwest Florida</title>
+    <meta name="description" content="Aviation weather for Central & Southwest Florida. Click an airport to see METAR & TAF decoded into easy tables." />
 
     <!-- ================= Brand & Theme Variables ================= -->
     <style>
       :root{
-        /* === Brand blues (aligns with your other pages) === */
+        /* Brand blues */
         --brand-900:#0b1f4a; --brand-800:#132b63; --brand-700:#1e3a8a; --brand-600:#2148a3;
         --brand-500:#2563eb; --brand-400:#3b82f6; --brand-300:#60a5fa; --brand-200:#93c5fd;
         --cyan-500:#0ea5e9;
-        /* === Neutrals === */
+        /* Neutrals */
         --ink-900:#0f172a; --ink-800:#1f2937; --ink-700:#334155; --ink-600:#475569; --ink-500:#64748b;
         --ink-300:#cbd5e1; --ink-200:#e2e8f0; --ink-100:#f1f5f9; --surface:#ffffff; --bg:#f8fafc;
-        /* === Radii & Shadows === */
+        /* Radii & Shadows */
         --radius-xl: 18px; --radius-lg: 14px; --radius-md: 10px; --radius-sm: 8px;
         --shadow-lg: 0 20px 40px rgba(2,6,23,0.12); --shadow-md: 0 10px 20px rgba(2,6,23,0.10); --shadow-sm: 0 4px 10px rgba(2,6,23,0.08);
         --container: 1180px;
@@ -71,13 +75,14 @@
       .lead{font-size:clamp(1rem,1.6vw,1.2rem);color:#eef2ff;max-width:60ch}
 
       /* ===== Page Layout: Sidebar + Main ===== */
-      .page{display:grid;grid-template-columns: 330px 1fr; gap:1rem; align-items:start;}
+      .page{display:grid;grid-template-columns: 360px 1fr; gap:1rem; align-items:start;}
       @media (max-width: 980px){ .page{ grid-template-columns: 1fr; } }
 
       /* ===== Sidebar ===== */
       .sidebar{position:sticky; top:88px; align-self:start; background:#fff; border:1px solid var(--ink-200); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); overflow:hidden;}
       .side-h{padding:1rem; border-bottom:1px solid var(--ink-200);}
-      .airport-search{display:flex; gap:.5rem;}
+      .filters{display:flex;gap:.5rem;flex-wrap:wrap;margin:.5rem 0 0}
+      .airport-search{display:flex; gap:.5rem; width:100%}
       .airport-search input{flex:1; border:1px solid var(--ink-300); border-radius:10px; padding:.5rem .7rem;}
       .airport-list{max-height:420px; overflow:auto;}
       .airport-list button{width:100%; text-align:left; padding:.6rem .85rem; border:0; background:#fff; border-bottom:1px solid var(--ink-200); cursor:pointer;}
@@ -130,7 +135,7 @@
       <div class="container nav" role="navigation" aria-label="Main">
         <a class="brand" href="#top" aria-label="Go to top">
           <div class="logo" aria-hidden="true"></div>
-          <span>Altitude — Aviation Weather (Central FL)</span>
+          <span>Altitude — Aviation Weather (Central & SW FL)</span>
         </a>
         <nav class="nav-links" aria-label="Primary">
           <a href="#wx">Airports</a>
@@ -149,9 +154,9 @@
     <!-- ================= Hero ================= -->
     <section class="hero" id="top" aria-label="Hero">
       <div class="container content">
-        <span class="eyebrow">METAR • TAF • Central Florida</span>
-        <h1>Tap an airport. Readable weather, fast decisions.</h1>
-        <p class="lead">Left side: pick an airport. We fetch METAR & TAF and translate them into simple tables with key fields, plus the raw report when you need it.</p>
+        <span class="eyebrow">METAR • TAF • Central & Southwest Florida</span>
+        <h1>Pick an airport. Readable weather, fast decisions.</h1>
+        <p class="lead">Left side: search or filter by region. We fetch METAR & TAF and translate them into simple tables with key fields, plus the raw report when you need it.</p>
       </div>
     </section>
 
@@ -166,11 +171,20 @@
               <span id="lastUpdated" class="muted" style="font-size:.85rem"></span>
             </div>
             <div class="airport-search" style="margin-top:.5rem">
-              <input id="search" type="search" placeholder="Search ICAO or city…" aria-label="Search airports" />
+              <input id="search" type="search" placeholder="Search ICAO, city, or name…" aria-label="Search airports" />
+            </div>
+            <div class="filters">
+              <label for="regionSel" class="muted" style="font-size:.9rem">Region</label>
+              <select id="regionSel" style="flex:1;border:1px solid var(--ink-300);border-radius:10px;padding:.45rem .6rem">
+                <option value="all">All</option>
+                <option value="central">Central</option>
+                <option value="westcentral">West‑Central</option>
+                <option value="southwest">Southwest</option>
+              </select>
               <button class="btn btn-outline" id="refresh" title="Refresh current airport">↻</button>
             </div>
           </div>
-          <div id="airportList" class="airport-list" role="listbox" aria-label="Central Florida airports"></div>
+          <div id="airportList" class="airport-list" role="listbox" aria-label="Airports"></div>
 
           <!-- Decoded METAR card -->
           <div class="wx-card" style="margin:1rem;" aria-live="polite">
@@ -203,7 +217,7 @@
           <section class="panel">
             <div class="hdr"><strong>Map</strong></div>
             <div class="bd">
-              <div id="map" aria-label="Airport map for Central Florida"></div>
+              <div id="map" aria-label="Airport map for Central & Southwest Florida"></div>
             </div>
           </section>
 
@@ -230,7 +244,7 @@
             <div class="bd">
               <ul>
                 <li>Data from NOAA ADDS (aviationweather.gov) — no API key required.</li>
-                <li>Times are shown in local browser time; source times are UTC.</li>
+                <li>Times are shown in your local browser time; source times are UTC.</li>
                 <li>If CORS blocks requests on your host, we can add a tiny proxy or switch to AVWX with a restricted key.</li>
               </ul>
             </div>
@@ -250,26 +264,52 @@
       </div>
     </footer>
 
-    <!-- ================= Scripts (No external libs except Leaflet) ================= -->
+    <!-- ================= Scripts ================= -->
     <script>
       // =====================================================================================
-      // DATA: Central Florida airports (with coordinates)
+      // Airports (Central, West‑Central, Southwest Florida) — with coords + region tag
       // =====================================================================================
       const AIRPORTS = [
-        { icao:'KMCO', name:'Orlando International',            city:'Orlando',        lat:28.4312, lon:-81.3081 },
-        { icao:'KSFB', name:'Orlando Sanford International',    city:'Sanford',        lat:28.7776, lon:-81.2375 },
-        { icao:'KORL', name:'Orlando Executive',                city:'Orlando',        lat:28.5455, lon:-81.3329 },
-        { icao:'KISM', name:'Kissimmee Gateway',                city:'Kissimmee',      lat:28.2898, lon:-81.4371 },
-        { icao:'KDAB', name:'Daytona Beach International',      city:'Daytona Beach',  lat:29.1799, lon:-81.0581 },
-        { icao:'KMLB', name:'Melbourne Orlando International',  city:'Melbourne',      lat:28.1028, lon:-80.6458 },
-        { icao:'KLEE', name:'Leesburg International',           city:'Leesburg',       lat:28.8231, lon:-81.8087 },
-        { icao:'KDED', name:'DeLand Municipal',                  city:'DeLand',         lat:29.0669, lon:-81.2831 },
-        { icao:'KOCF', name:'Ocala International',              city:'Ocala',          lat:29.1739, lon:-82.2240 },
-        { icao:'KXFL', name:'Flagler Executive',                city:'Palm Coast',     lat:29.4674, lon:-81.2068 },
-        { icao:'KLAL', name:'Lakeland Linder International',    city:'Lakeland',       lat:27.9889, lon:-82.0186 },
-        { icao:'KTIX', name:'Space Coast Regional',             city:'Titusville',     lat:28.5148, lon:-80.7992 },
-        { icao:'KEVB', name:'New Smyrna Beach Municipal',       city:'New Smyrna',     lat:29.0557, lon:-80.9470 },
-        { icao:'KSGJ', name:'Northeast Florida Regional',       city:'St. Augustine',  lat:29.9592, lon:-81.3398 }
+        // —— Central Florida ——
+        { icao:'KMCO', name:'Orlando International',            city:'Orlando',       lat:28.4312, lon:-81.3081, region:'central' },
+        { icao:'KSFB', name:'Orlando Sanford International',    city:'Sanford',       lat:28.7776, lon:-81.2375, region:'central' },
+        { icao:'KORL', name:'Orlando Executive',                city:'Orlando',       lat:28.5455, lon:-81.3329, region:'central' },
+        { icao:'KISM', name:'Kissimmee Gateway',                city:'Kissimmee',     lat:28.2898, lon:-81.4371, region:'central' },
+        { icao:'KDAB', name:'Daytona Beach International',      city:'Daytona Beach', lat:29.1799, lon:-81.0581, region:'central' },
+        { icao:'KMLB', name:'Melbourne Orlando International',  city:'Melbourne',     lat:28.1028, lon:-80.6458, region:'central' },
+        { icao:'KLEE', name:'Leesburg International',           city:'Leesburg',      lat:28.8231, lon:-81.8087, region:'central' },
+        { icao:'KDED', name:'DeLand Municipal',                  city:'DeLand',        lat:29.0669, lon:-81.2831, region:'central' },
+        { icao:'KOCF', name:'Ocala International',              city:'Ocala',         lat:29.1739, lon:-82.2240, region:'central' },
+        { icao:'KXFL', name:'Flagler Executive',                city:'Palm Coast',    lat:29.4674, lon:-81.2068, region:'central' },
+        { icao:'KLAL', name:'Lakeland Linder International',    city:'Lakeland',      lat:27.9889, lon:-82.0186, region:'central' },
+        { icao:'KTIX', name:'Space Coast Regional',             city:'Titusville',    lat:28.5148, lon:-80.7992, region:'central' },
+        { icao:'KEVB', name:'New Smyrna Beach Municipal',       city:'New Smyrna',    lat:29.0557, lon:-80.9470, region:'central' },
+        { icao:'KSGJ', name:'Northeast Florida Regional',       city:'St. Augustine', lat:29.9592, lon:-81.3398, region:'central' },
+        { icao:'KSEF', name:'Sebring Regional',                 city:'Sebring',       lat:27.4564, lon:-81.3429, region:'central' },
+        { icao:'KBOW', name:'Bartow Executive',                 city:'Bartow',        lat:27.9431, lon:-81.7834, region:'central' },
+        { icao:'KZPH', name:'Zephyrhills Municipal',            city:'Zephyrhills',   lat:28.2282, lon:-82.1559, region:'central' },
+        { icao:'KBKV', name:'Brooksville‑Tampa Bay',            city:'Brooksville',   lat:28.4735, lon:-82.4556, region:'central' },
+        { icao:'KGIF', name:'Winter Haven Regional (Gilbert)',  city:'Winter Haven',  lat:28.0629, lon:-81.7533, region:'central' },
+        { icao:'KINF', name:'Inverness',                        city:'Inverness',     lat:28.8031, lon:-82.3170, region:'central' },
+        { icao:'KCGC', name:'Crystal River',                    city:'Crystal River', lat:28.8670, lon:-82.5713, region:'central' },
+
+        // —— West‑Central Florida (Tampa Bay & Sarasota/Bradenton) ——
+        { icao:'KTPA', name:'Tampa International',              city:'Tampa',         lat:27.9755, lon:-82.5332, region:'westcentral' },
+        { icao:'KPIE', name:'St. Pete–Clearwater International',city:'Clearwater',    lat:27.9107, lon:-82.6874, region:'westcentral' },
+        { icao:'KSPG', name:'Albert Whitted',                   city:'St. Petersburg',lat:27.7651, lon:-82.6269, region:'westcentral' },
+        { icao:'KTPF', name:'Peter O. Knight',                  city:'Tampa',         lat:27.9156, lon:-82.4493, region:'westcentral' },
+        { icao:'KPCM', name:'Plant City',                       city:'Plant City',    lat:28.0006, lon:-82.1456, region:'westcentral' },
+        { icao:'KVDF', name:'Tampa Executive (Vandenberg)',     city:'Tampa',         lat:28.0138, lon:-82.3453, region:'westcentral' },
+        { icao:'KSRQ', name:'Sarasota–Bradenton',               city:'Sarasota',      lat:27.3954, lon:-82.5541, region:'westcentral' },
+        { icao:'KVNC', name:'Venice Municipal',                 city:'Venice',        lat:27.0716, lon:-82.4403, region:'westcentral' },
+
+        // —— Southwest Florida (Charlotte • Lee • Collier) ——
+        { icao:'KPGD', name:'Punta Gorda (Charlotte County)',   city:'Punta Gorda',   lat:26.9191, lon:-81.9905, region:'southwest' },
+        { icao:'KFMY', name:'Page Field',                       city:'Fort Myers',    lat:26.5866, lon:-81.8633, region:'southwest' },
+        { icao:'KRSW', name:'Southwest Florida International',  city:'Fort Myers',    lat:26.5362, lon:-81.7552, region:'southwest' },
+        { icao:'KAPF', name:'Naples Municipal',                 city:'Naples',        lat:26.1526, lon:-81.7753, region:'southwest' },
+        { icao:'KMKY', name:'Marco Island Executive',           city:'Marco Island',  lat:25.9951, lon:-81.6726, region:'southwest' },
+        { icao:'KIMM', name:'Immokalee Regional',               city:'Immokalee',     lat:26.4337, lon:-81.4010, region:'southwest' },
       ];
 
       // =====================================================================================
@@ -277,37 +317,40 @@
       // =====================================================================================
       const $ = sel => document.querySelector(sel);
       const $$ = sel => Array.from(document.querySelectorAll(sel));
-      const pad2 = n => String(n).padStart(2,'0');
       const ktToMph = kt => Math.round(Number(kt||0) * 1.15078);
       const cToF = c => Math.round((Number(c||0) * 9/5) + 32);
       const inHgToHPa = inhg => Math.round(Number(inhg||0) * 33.8639);
       const smToKm = sm => Math.round(Number(sm||0) * 1.60934);
       const fmt = (v, unit='') => (v===undefined || v===null || v==='') ? '—' : `${v}${unit}`;
-      const asLocal = isoOrZulu => {
-        try{ const d = new Date(isoOrZulu); return d.toLocaleString(); }catch{ return String(isoOrZulu||''); }
-      };
+      const asLocal = isoOrZulu => { try{ const d = new Date(isoOrZulu); return d.toLocaleString(); }catch{ return String(isoOrZulu||''); } };
 
       // =====================================================================================
       // NOAA ADDS (aviationweather.gov) endpoints — JSON (no API key required)
       // =====================================================================================
-      // METAR: use stationString (not "stations") and request mostRecent=true
+      // METAR: use stationString and mostRecent=true
       const ADDS_METAR = (icao) => `https://aviationweather.gov/adds/dataserver_current/httpparam?`+
         new URLSearchParams({ dataSource:'metars', requestType:'retrieve', format:'JSON', stationString:icao, mostRecent:'true', hoursBeforeNow:'3' });
-      // TAF: also specify stationString and mostRecent=true (optional)
+      // TAF
       const ADDS_TAF = (icao) => `https://aviationweather.gov/adds/dataserver_current/httpparam?`+
-        new URLSearchParams({ dataSource:'tafs', requestType:'retrieve', format:'JSON', stationString:icao, mostRecent:'true', hoursBeforeNow:'6', timeType:'issue' });
+        new URLSearchParams({ dataSource:'tafs', requestType:'retrieve', format:'JSON', stationString:icao, mostRecent:'true', hoursBeforeNow:'12', timeType:'issue' });
 
       // =====================================================================================
-      // UI: Airport list + search
+      // UI: Airport list + search + region filter
       // =====================================================================================
       const listEl = $('#airportList');
       const searchEl = $('#search');
+      const regionSel = $('#regionSel');
       const lastUpdatedEl = $('#lastUpdated');
       let currentICAO = localStorage.getItem('last-icao') || 'KSFB';
 
       function renderAirportList(){
-        const q = searchEl.value.trim().toLowerCase();
-        const filtered = AIRPORTS.filter(a => !q || a.icao.toLowerCase().includes(q) || a.city.toLowerCase().includes(q) || a.name.toLowerCase().includes(q));
+        const q = (searchEl.value||'').trim().toLowerCase();
+        const region = regionSel.value;
+        const filtered = AIRPORTS.filter(a => (
+          region==='all' || a.region===region
+        ) && (
+          !q || a.icao.toLowerCase().includes(q) || a.city.toLowerCase().includes(q) || a.name.toLowerCase().includes(q)
+        ));
         listEl.innerHTML = filtered.map(a => `
           <button role="option" aria-selected="${a.icao===currentICAO}" class="${a.icao===currentICAO?'active':''}" data-icao="${a.icao}">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:.6rem">
@@ -320,7 +363,7 @@
           </button>`).join('');
       }
 
-      // Handle clicks on airport buttons
+      // Handle clicks + filters
       listEl.addEventListener('click', (e)=>{
         const btn = e.target.closest('button[data-icao]');
         if (!btn) return;
@@ -332,6 +375,7 @@
         updateMapSelection();
       });
       searchEl.addEventListener('input', renderAirportList);
+      regionSel.addEventListener('change', () => { renderAirportList(); fitMapToRegion(); });
 
       // =====================================================================================
       // Fetch + render METAR & TAF
@@ -349,15 +393,11 @@
       refreshBtn.addEventListener('click', ()=> { loadAll(currentICAO); updateMapSelection(); });
 
       async function loadAll(icao){
-        // Show loading states
         metarBody.innerHTML = '<p class="muted">Loading METAR…</p>';
         tafBody.innerHTML = '<p class="muted">Loading TAF…</p>';
-        rawMetar.textContent = '…';
-        rawTaf.textContent = '…';
-        metarTime.textContent = '';
-        tafTime.textContent = '';
+        rawMetar.textContent = '…'; rawTaf.textContent = '…';
+        metarTime.textContent = ''; tafTime.textContent = '';
         lastUpdatedEl.textContent = 'Updating…';
-
         try{
           const [metarRes, tafRes] = await Promise.all([
             fetch(ADDS_METAR(icao)),
@@ -365,11 +405,10 @@
           ]);
           const metarJson = await metarRes.json();
           const tafJson = await tafRes.json();
-
           renderMETAR(icao, metarJson);
           renderTAF(icao, tafJson);
           lastUpdatedEl.textContent = 'Updated ' + new Date().toLocaleTimeString();
-        } catch(err){
+        }catch(err){
           console.error(err);
           metarBody.innerHTML = '<p style="color:#b91c1c">Failed to load METAR.</p>';
           tafBody.innerHTML = '<p style="color:#b91c1c">Failed to load TAF.</p>';
@@ -378,41 +417,27 @@
         }
       }
 
-      // -------------------- METAR renderer --------------------
       function renderMETAR(icao, json){
         try{
           const list = json?.response?.data?.METAR || [];
           if (!list.length){ metarBody.innerHTML = '<p class="muted">No recent METAR.</p>'; return; }
           const m = list[0];
-
-          // Raw
           rawMetar.textContent = m.raw_text || '—';
-
-          // Time display
           metarTime.textContent = m.observation_time ? ('Observed ' + asLocal(m.observation_time)) : '';
-
-          // Sky layers → readable string
           const sky = Array.isArray(m.sky_condition) ? m.sky_condition : (m.sky_condition? [m.sky_condition] : []);
           const skyLines = sky.map(s => `${s.sky_cover}${s.cloud_base_ft_agl?(' @ '+s.cloud_base_ft_agl+' ft AGL'):''}`);
-
-          // Build table HTML for METAR decoded
           metarBody.innerHTML = `
-            <table aria-label="Decoded METAR">
-              <tbody>
-                <tr><th>Station</th><td>${m.station_id || icao}</td></tr>
-                <tr><th>Observed</th><td>${asLocal(m.observation_time)}</td></tr>
-                <tr><th>Flight Category</th><td><strong>${m.flight_category || '—'}</strong></td></tr>
-                <tr><th>Wind</th><td>${fmt(m.wind_dir_degrees,'°')} @ ${fmt(m.wind_speed_kt,' kt')} (${ktToMph(m.wind_speed_kt)} mph) ${m.wind_gust_kt?(' gust '+m.wind_gust_kt+' kt'):''}</td></tr>
-                <tr><th>Visibility</th><td>${fmt(m.visibility_statute_mi,' sm')} (${smToKm(m.visibility_statute_mi)} km)</td></tr>
-                <tr><th>Ceiling / Clouds</th><td>${skyLines.length? skyLines.join('<br>') : '—'}</td></tr>
-                <tr><th>Weather</th><td>${m.wx_string || '—'}</td></tr>
-                <tr><th>Temperature</th><td>${fmt(m.temp_c,'°C')} (${cToF(m.temp_c)}°F) • Dewpoint ${fmt(m.dewpoint_c,'°C')} (${cToF(m.dewpoint_c)}°F)</td></tr>
-                <tr><th>Altimeter</th><td>${fmt(m.altim_in_hg,' inHg')} (${inHgToHPa(m.altim_in_hg)} hPa)</td></tr>
-                <tr><th>Sea‑level Pressure</th><td>${m.sea_level_pressure_mb? (m.sea_level_pressure_mb+' mb') : '—'}</td></tr>
-              </tbody>
-            </table>`;
-
-          // Quick status panel (right side)
+            <table aria-label="Decoded METAR"><tbody>
+              <tr><th>Station</th><td>${m.station_id || icao}</td></tr>
+              <tr><th>Observed</th><td>${asLocal(m.observation_time)}</td></tr>
+              <tr><th>Flight Category</th><td><strong>${m.flight_category || '—'}</strong></td></tr>
+              <tr><th>Wind</th><td>${fmt(m.wind_dir_degrees,'°')} @ ${fmt(m.wind_speed_kt,' kt')} (${ktToMph(m.wind_speed_kt)} mph) ${m.wind_gust_kt?(' gust '+m.wind_gust_kt+' kt'):''}</td></tr>
+              <tr><th>Visibility</th><td>${fmt(m.visibility_statute_mi,' sm')} (${smToKm(m.visibility_statute_mi)} km)</td></tr>
+              <tr><th>Ceiling / Clouds</th><td>${skyLines.length? skyLines.join('<br>') : '—'}</td></tr>
+              <tr><th>Weather</th><td>${m.wx_string || '—'}</td></tr>
+              <tr><th>Temperature</th><td>${fmt(m.temp_c,'°C')} (${cToF(m.temp_c)}°F) • Dewpoint ${fmt(m.dewpoint_c,'°C')} (${cToF(m.dewpoint_c)}°F)</td></tr>
+              <tr><th>Altimeter</th><td>${fmt(m.altim_in_hg,' inHg')} (${inHgToHPa(m.altim_in_hg)} hPa)</td></tr>
+            </tbody></table>`;
           statusTitle.textContent = `${icao} — ${m.flight_category || '—'}`;
           statusBody.innerHTML = `
             <div class="grid">
@@ -429,66 +454,54 @@
                 <p style="margin:.2rem 0 .6rem">${fmt(m.temp_c,'°C')} (${cToF(m.temp_c)}°F) • ${fmt(m.altim_in_hg,' inHg')}</p>
               </div>
             </div>`;
-        } catch(err){
+        }catch(err){
           console.error(err);
           metarBody.innerHTML = '<p style="color:#b91c1c">Unable to parse METAR.</p>';
         }
       }
 
-      // -------------------- TAF renderer --------------------
       function renderTAF(icao, json){
         try{
           const list = json?.response?.data?.TAF || [];
           if (!list.length){ tafBody.innerHTML = '<p class="muted">No recent TAF.</p>'; rawTaf.textContent = '—'; return; }
           const t = list[0];
-
-          // Raw
           rawTaf.textContent = t.raw_text || '—';
-
-          // Time display
           const issued = t.issue_time ? ('Issued ' + asLocal(t.issue_time)) : '';
           const valid = (t.valid_time_from && t.valid_time_to) ? (`Valid ${asLocal(t.valid_time_from)} → ${asLocal(t.valid_time_to)}`) : '';
           tafTime.textContent = [issued, valid].filter(Boolean).join(' • ');
-
-          // Forecast periods (array)
           const f = Array.isArray(t.forecast) ? t.forecast : (t.forecast? [t.forecast] : []);
           if (!f.length){ tafBody.innerHTML = '<p class="muted">No forecast periods found.</p>'; return; }
-
-          // Build cards for each period with a small table
           tafBody.innerHTML = f.map(p => {
             const sky = Array.isArray(p.sky_condition) ? p.sky_condition : (p.sky_condition? [p.sky_condition] : []);
             const skyLines = sky.map(s => `${s.sky_cover}${s.cloud_base_ft_agl?(' @ '+s.cloud_base_ft_agl+' ft AGL'):''}`);
             return `
               <div style="border:1px solid var(--ink-200);border-radius:12px;padding:.6rem;margin-bottom:.6rem; background:#fff">
                 <div class="muted" style="font-weight:700">${asLocal(p.fcst_time_from)} → ${asLocal(p.fcst_time_to)}</div>
-                <table aria-label="TAF period">
-                  <tbody>
-                    <tr><th>Wind</th><td>${fmt(p.wind_dir_degrees,'°')} @ ${fmt(p.wind_speed_kt,' kt')} ${p.wind_gust_kt?('(G'+p.wind_gust_kt+')'):''}</td></tr>
-                    <tr><th>Visibility</th><td>${p.visibility_statute_mi? (p.visibility_statute_mi+' sm') : '—'}</td></tr>
-                    <tr><th>Weather</th><td>${p.wx_string || '—'}</td></tr>
-                    <tr><th>Clouds</th><td>${skyLines.length? skyLines.join('<br>') : '—'}</td></tr>
-                  </tbody>
-                </table>
+                <table aria-label="TAF period"><tbody>
+                  <tr><th>Wind</th><td>${fmt(p.wind_dir_degrees,'°')} @ ${fmt(p.wind_speed_kt,' kt')} ${p.wind_gust_kt?('(G'+p.wind_gust_kt+')'):''}</td></tr>
+                  <tr><th>Visibility</th><td>${p.visibility_statute_mi? (p.visibility_statute_mi+' sm') : '—'}</td></tr>
+                  <tr><th>Weather</th><td>${p.wx_string || '—'}</td></tr>
+                  <tr><th>Clouds</th><td>${skyLines.length? skyLines.join('<br>') : '—'}</td></tr>
+                </tbody></table>
               </div>`;
           }).join('');
-        } catch(err){
+        }catch(err){
           console.error(err);
           tafBody.innerHTML = '<p style="color:#b91c1c">Unable to parse TAF.</p>';
         }
       }
 
       // =====================================================================================
-      // Leaflet map init + selection sync
+      // Leaflet map init + region fit + selection sync
       // =====================================================================================
       let map, markers = {};
 
       function initMap() {
-        if (!window.L) return; // Leaflet not loaded
-        map = L.map('map').setView([28.6, -81.3], 8);
+        if (!window.L) return;
+        map = L.map('map').setView([27.8, -81.9], 8); // mid‑point between Central & SW
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
-
         AIRPORTS.forEach(a => {
           if (typeof a.lat !== 'number' || typeof a.lon !== 'number') return;
           const m = L.marker([a.lat, a.lon]).addTo(map)
@@ -512,6 +525,15 @@
         if (markers[a.icao]) markers[a.icao].openPopup();
       }
 
+      function fitMapToRegion(){
+        if (!map) return;
+        const r = regionSel.value;
+        const points = AIRPORTS.filter(a => r==='all' || a.region===r).map(a => [a.lat, a.lon]);
+        if (!points.length) return;
+        const bounds = L.latLngBounds(points);
+        map.fitBounds(bounds.pad(0.12));
+      }
+
       // =====================================================================================
       // Mobile nav + init
       // =====================================================================================
@@ -533,6 +555,7 @@
       loadAll(currentICAO);
       initMap();
       updateMapSelection();
+      fitMapToRegion();
     </script>
   </body>
 </html>
