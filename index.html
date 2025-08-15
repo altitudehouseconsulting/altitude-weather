@@ -5,26 +5,17 @@
       ======================================================================================
       Altitude Aviation Weather — Central Florida Airports (Single‑file HTML)
       --------------------------------------------------------------------------------------
-      Matches your image‑first model while adding a LEFT sidebar that:
-        • Lists Central Florida airports (ICAO)
-        • On click: fetches live METAR + TAF from NOAA ADDS (no API key required)
-        • Renders easy‑to‑read TABLES (decoded fields) for METAR and TAF
-      Notes:
-        • Data source: https://aviationweather.gov/dataserver (ADDS) — JSON, no key.
-        • CORS is typically enabled. If it’s blocked by your hosting, a tiny proxy may be needed.
-        • All code is commented (per your preference) and uses NO external libraries.
-        • Drop in / deploy as index.html on GitHub Pages or Netlify.
-
-      TODOs:
-        1) Replace placeholder hero image + brand.
-        2) Add/remove airports in the AIRPORTS array as needed.
-        3) If you later want map overlays, we can bolt on Leaflet or Mapbox.
+      • Left sidebar: Central FL airports; click to fetch METAR/TAF from NOAA ADDS
+      • Main: at‑a‑glance status, map with markers, raw reports, and notes
+      • FIXED: ADDS METAR param now uses stationString + mostRecent
+      • ADDED: Leaflet map with airport markers and selection sync
+      • No external build tools; just drop in as index.html
       ======================================================================================
     -->
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Altitude Aviation Weather — Central Florida Airports</title>
-    <meta name="description" content="Central Florida aviation weather. Click an airport to see METAR & TAF decoded into tables." />
+    <meta name="description" content="Central Florida aviation weather. Click an airport to see METAR & TAF decoded into tables, plus a quick map." />
 
     <!-- ================= Brand & Theme Variables ================= -->
     <style>
@@ -112,10 +103,26 @@
       .panel .bd{padding:1rem}
       .raw{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background:#f8fafc; border:1px dashed var(--ink-300); border-radius: 10px; padding:.6rem}
 
+      /* ===== Map ===== */
+      #map { height: 380px; border-radius: var(--radius-xl); }
+
       /* ===== Footer ===== */
       footer{padding:2rem 0 2.6rem; color: var(--ink-600)}
       :focus-visible{outline:3px solid var(--cyan-500); outline-offset:2px; border-radius:6px}
     </style>
+
+    <!-- Leaflet (map) -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM/kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
   </head>
   <body>
     <!-- ================= Header & Navigation ================= -->
@@ -182,13 +189,21 @@
           </div>
         </aside>
 
-        <!-- ===== Main content: quick status, raw text, notes ===== -->
+        <!-- ===== Main content: quick status, MAP, raw text, notes ===== -->
         <main class="main">
           <!-- Airport status panel -->
           <section class="panel">
             <div class="hdr"><strong id="statusTitle">Airport status</strong></div>
             <div class="bd" id="statusBody">
               <p class="muted" style="margin:0">Pick an airport from the left to see flight category, winds, ceilings, and visibility at a glance.</p>
+            </div>
+          </section>
+
+          <!-- Map panel -->
+          <section class="panel">
+            <div class="hdr"><strong>Map</strong></div>
+            <div class="bd">
+              <div id="map" aria-label="Airport map for Central Florida"></div>
             </div>
           </section>
 
@@ -235,26 +250,26 @@
       </div>
     </footer>
 
-    <!-- ================= Scripts (No external libs) ================= -->
+    <!-- ================= Scripts (No external libs except Leaflet) ================= -->
     <script>
       // =====================================================================================
-      // DATA: Central Florida airports (edit this list as needed)
+      // DATA: Central Florida airports (with coordinates)
       // =====================================================================================
       const AIRPORTS = [
-        { icao:'KMCO', name:'Orlando International', city:'Orlando' },
-        { icao:'KSFB', name:'Orlando Sanford International', city:'Sanford' },
-        { icao:'KORL', name:'Orlando Executive', city:'Orlando' },
-        { icao:'KISM', name:'Kissimmee Gateway', city:'Kissimmee' },
-        { icao:'KDAB', name:'Daytona Beach International', city:'Daytona Beach' },
-        { icao:'KMLB', name:'Melbourne Orlando International', city:'Melbourne' },
-        { icao:'KLEE', name:'Leesburg International', city:'Leesburg' },
-        { icao:'KDED', name:'DeLand Municipal', city:'DeLand' },
-        { icao:'KOCF', name:'Ocala International', city:'Ocala' },
-        { icao:'KXFL', name:'Flagler Executive', city:'Palm Coast' },
-        { icao:'KLAL', name:'Lakeland Linder International', city:'Lakeland' },
-        { icao:'KTIX', name:'Space Coast Regional', city:'Titusville' },
-        { icao:'KEVB', name:'New Smyrna Beach Municipal', city:'New Smyrna Beach' },
-        { icao:'KSGJ', name:'Northeast Florida Regional', city:'St. Augustine' }
+        { icao:'KMCO', name:'Orlando International',            city:'Orlando',        lat:28.4312, lon:-81.3081 },
+        { icao:'KSFB', name:'Orlando Sanford International',    city:'Sanford',        lat:28.7776, lon:-81.2375 },
+        { icao:'KORL', name:'Orlando Executive',                city:'Orlando',        lat:28.5455, lon:-81.3329 },
+        { icao:'KISM', name:'Kissimmee Gateway',                city:'Kissimmee',      lat:28.2898, lon:-81.4371 },
+        { icao:'KDAB', name:'Daytona Beach International',      city:'Daytona Beach',  lat:29.1799, lon:-81.0581 },
+        { icao:'KMLB', name:'Melbourne Orlando International',  city:'Melbourne',      lat:28.1028, lon:-80.6458 },
+        { icao:'KLEE', name:'Leesburg International',           city:'Leesburg',       lat:28.8231, lon:-81.8087 },
+        { icao:'KDED', name:'DeLand Municipal',                  city:'DeLand',         lat:29.0669, lon:-81.2831 },
+        { icao:'KOCF', name:'Ocala International',              city:'Ocala',          lat:29.1739, lon:-82.2240 },
+        { icao:'KXFL', name:'Flagler Executive',                city:'Palm Coast',     lat:29.4674, lon:-81.2068 },
+        { icao:'KLAL', name:'Lakeland Linder International',    city:'Lakeland',       lat:27.9889, lon:-82.0186 },
+        { icao:'KTIX', name:'Space Coast Regional',             city:'Titusville',     lat:28.5148, lon:-80.7992 },
+        { icao:'KEVB', name:'New Smyrna Beach Municipal',       city:'New Smyrna',     lat:29.0557, lon:-80.9470 },
+        { icao:'KSGJ', name:'Northeast Florida Regional',       city:'St. Augustine',  lat:29.9592, lon:-81.3398 }
       ];
 
       // =====================================================================================
@@ -275,23 +290,12 @@
       // =====================================================================================
       // NOAA ADDS (aviationweather.gov) endpoints — JSON (no API key required)
       // =====================================================================================
-      // METAR: docs → /adds/dataserver_current/httpparam?dataSource=metars&...
-// METAR: use stationString + mostRecent
-const ADDS_METAR = (icao) =>
-  `https://aviationweather.gov/adds/dataserver_current/httpparam?` +
-  new URLSearchParams({
-    dataSource: 'metars',
-    requestType: 'retrieve',
-    format: 'JSON',
-    stationString: icao,      // <-- was "stations"
-    mostRecent: 'true',
-    hoursBeforeNow: '3'
-  });
-      // TAF: docs → /adds/dataserver_current/httpparam?dataSource=tafs&...
+      // METAR: use stationString (not "stations") and request mostRecent=true
+      const ADDS_METAR = (icao) => `https://aviationweather.gov/adds/dataserver_current/httpparam?`+
+        new URLSearchParams({ dataSource:'metars', requestType:'retrieve', format:'JSON', stationString:icao, mostRecent:'true', hoursBeforeNow:'3' });
+      // TAF: also specify stationString and mostRecent=true (optional)
       const ADDS_TAF = (icao) => `https://aviationweather.gov/adds/dataserver_current/httpparam?`+
-        new URLSearchParams({ dataSource:'tafs', requestType:'retrieve', format:'JSON', stationString:icao, mostRecent: 'true',
-    hoursBeforeNow: '3'
-  });
+        new URLSearchParams({ dataSource:'tafs', requestType:'retrieve', format:'JSON', stationString:icao, mostRecent:'true', hoursBeforeNow:'6', timeType:'issue' });
 
       // =====================================================================================
       // UI: Airport list + search
@@ -302,7 +306,6 @@ const ADDS_METAR = (icao) =>
       let currentICAO = localStorage.getItem('last-icao') || 'KSFB';
 
       function renderAirportList(){
-        // Filter by search (ICAO or city)
         const q = searchEl.value.trim().toLowerCase();
         const filtered = AIRPORTS.filter(a => !q || a.icao.toLowerCase().includes(q) || a.city.toLowerCase().includes(q) || a.name.toLowerCase().includes(q));
         listEl.innerHTML = filtered.map(a => `
@@ -326,6 +329,7 @@ const ADDS_METAR = (icao) =>
         $$('#airportList button').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         loadAll(currentICAO);
+        updateMapSelection();
       });
       searchEl.addEventListener('input', renderAirportList);
 
@@ -342,7 +346,7 @@ const ADDS_METAR = (icao) =>
       const rawTaf = $('#rawTaf');
       const refreshBtn = $('#refresh');
 
-      refreshBtn.addEventListener('click', ()=> loadAll(currentICAO));
+      refreshBtn.addEventListener('click', ()=> { loadAll(currentICAO); updateMapSelection(); });
 
       async function loadAll(icao){
         // Show loading states
@@ -474,6 +478,41 @@ const ADDS_METAR = (icao) =>
       }
 
       // =====================================================================================
+      // Leaflet map init + selection sync
+      // =====================================================================================
+      let map, markers = {};
+
+      function initMap() {
+        if (!window.L) return; // Leaflet not loaded
+        map = L.map('map').setView([28.6, -81.3], 8);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        AIRPORTS.forEach(a => {
+          if (typeof a.lat !== 'number' || typeof a.lon !== 'number') return;
+          const m = L.marker([a.lat, a.lon]).addTo(map)
+            .bindPopup(`<strong>${a.icao}</strong><br>${a.name}`);
+          m.on('click', () => {
+            currentICAO = a.icao;
+            localStorage.setItem('last-icao', currentICAO);
+            renderAirportList();
+            loadAll(currentICAO);
+            updateMapSelection();
+          });
+          markers[a.icao] = m;
+        });
+      }
+
+      function updateMapSelection() {
+        if (!map) return;
+        const a = AIRPORTS.find(x => x.icao === currentICAO);
+        if (!a) return;
+        map.setView([a.lat, a.lon], 10);
+        if (markers[a.icao]) markers[a.icao].openPopup();
+      }
+
+      // =====================================================================================
       // Mobile nav + init
       // =====================================================================================
       const hamburger = document.getElementById('hamburger');
@@ -488,10 +527,12 @@ const ADDS_METAR = (icao) =>
         hamburger.setAttribute('aria-expanded', 'false');
       }));
 
-      // Initial render of airport list + initial load
+      // Initial render of airport list + initial load + map
       document.getElementById('year').textContent = new Date().getFullYear();
       renderAirportList();
       loadAll(currentICAO);
+      initMap();
+      updateMapSelection();
     </script>
   </body>
 </html>
