@@ -21,14 +21,16 @@ const API_KEY = 'glW3LNiEIa1bKVWjgjg_U4RcbAdhusDhO6JOwN9rLbM';
 const headers = {Authorization: `Bearer ${API_KEY}`};
 
 function fetchWeather(icao) {
-  fetch(`https://avwx.rest/api/metar/${icao}?format=json`, { headers })
-    .then(res => res.json()).then(data => {
-      metarEl.textContent = data.raw || 'No METAR available.';
+  fetch(`https://avwx.rest/api/metar/${icao}?format=json&translate=true`, { headers })
+    .then(res => res.json())
+    .then(data => {
+      metarEl.textContent = data.sanitized || 'No METAR available.';
     }).catch(() => metarEl.textContent = 'Error loading METAR.');
 
-  fetch(`https://avwx.rest/api/taf/${icao}?format=json`, { headers })
-    .then(res => res.json()).then(data => {
-      tafEl.textContent = data.raw || 'No TAF available.';
+  fetch(`https://avwx.rest/api/taf/${icao}?format=json&translate=true`, { headers })
+    .then(res => res.json())
+    .then(data => {
+      tafEl.textContent = data.sanitized || 'No TAF available.';
     }).catch(() => tafEl.textContent = 'Error loading TAF.');
 }
 
