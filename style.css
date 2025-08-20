@@ -68,5 +68,27 @@ body {
   overflow-y: auto;          /* Enable vertical scroll */
 }
 
+.wx-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  background: #f4f9fc;
+  border: 1px solid #ccc;
+}
+
+.wx-table th, .wx-table td {
+  border: 1px solid #ccc;
+  padding: 4px 6px;
+  text-align: left;
+}
+
+#wx-definitions {
+  font-size: 0.85rem;
+  background: #eef3f9;
+  padding: 0.5rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+}
 
 
