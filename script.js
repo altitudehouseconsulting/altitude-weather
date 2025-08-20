@@ -15,6 +15,7 @@ const airportMap = {
   'MGGT': 'Guatemala City, GT (MGGT)',
   'MUHA': 'Havana, CU (MUHA)',
   'TJSJ': 'San Juan, PR (TJSJ)'
+  'KSFB': 'Sanford, FL (KSFB)'
 };
 
 const API_KEY = 'glW3LNiEIa1bKVWjgjg_U4RcbAdhusDhO6JOwN9rLbM';
