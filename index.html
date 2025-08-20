@@ -10,8 +10,6 @@
 </head>
 <body>
   <div id="sidebar">
-
-
     <h1>Flight Weather</h1>
     <label for="icao-select">Select Airport:</label>
     <select id="icao-select">
@@ -28,36 +26,17 @@
     </select>
     <div class="weather-info">
       <h2 id="airport-name">Miami, FL (KMIA)</h2>
-    <div class="wx-section">
+<div class="wx-section">
   <h3>METAR</h3>
-  <button onclick="toggleDisplay('metar')">View Raw</button>
   <div id="metar" class="wx-translated">Loading...</div>
-
-  <table id="metar-table" class="wx-table" style="display: none;"></table>
-  <button onclick="toggleTable('metar')">Show Details</button>
 </div>
 
 <div class="wx-section">
   <h3>TAF</h3>
-  <button onclick="toggleDisplay('taf')">View Raw</button>
   <div id="taf" class="wx-translated">Loading...</div>
-
-  <table id="taf-table" class="wx-table" style="display: none;"></table>
-  <button onclick="toggleTable('taf')">Show Details</button>
 </div>
-
-<!-- Definitions toggle -->
-<button onclick="toggleDefinitions()">What does this mean?</button>
-<div id="wx-definitions" style="display:none;">
-  <ul>
-    <li><strong>Wind:</strong> Direction and speed in knots (e.g., 18010KT = 180° @ 10kt)</li>
-    <li><strong>Visibility:</strong> Distance you can see (in statute miles)</li>
-    <li><strong>Ceiling:</strong> Cloud base altitude (e.g., BKN020 = broken clouds at 2,000 ft)</li>
-    <li><strong>Temperature/Dewpoint:</strong> Ambient and dew point in °C</li>
-    <li><strong>Altimeter:</strong> Atmospheric pressure (e.g., A3002 = 30.02 inHg)</li>
-    <li><strong>RMK:</strong> Remarks section (e.g., tower visibility, runway conditions)</li>
-  </ul>
-</div>
+    </div>
+  </div>
 
   <div id="map-container">
     <iframe
