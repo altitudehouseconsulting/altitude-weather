@@ -11,6 +11,23 @@
 <body>
   <div id="sidebar">
 
+
+    <h1>Flight Weather</h1>
+    <label for="icao-select">Select Airport:</label>
+    <select id="icao-select">
+      <option value="KMIA">Miami, FL (KMIA)</option>
+      <option value="KATL">Atlanta, GA (KATL)</option>
+      <option value="KMSY">New Orleans, LA (KMSY)</option>
+      <option value="KDFW">Dallas/Fort Worth, TX (KDFW)</option>
+      <option value="KBNA">Nashville, TN (KBNA)</option>
+      <option value="KSDF">Louisville, KY (KSDF)</option>
+      <option value="MMMX">Mexico City, MX (MMMX)</option>
+      <option value="MGGT">Guatemala City, GT (MGGT)</option>
+      <option value="MUHA">Havana, CU (MUHA)</option>
+      <option value="TJSJ">San Juan, PR (TJSJ)</option>
+    </select>
+    <div class="weather-info">
+      <h2 id="airport-name">Miami, FL (KMIA)</h2>
     <div class="wx-section">
   <h3>METAR</h3>
   <button onclick="toggleDisplay('metar')">View Raw</button>
@@ -41,33 +58,6 @@
     <li><strong>RMK:</strong> Remarks section (e.g., tower visibility, runway conditions)</li>
   </ul>
 </div>
-    <h1>Flight Weather</h1>
-    <label for="icao-select">Select Airport:</label>
-    <select id="icao-select">
-      <option value="KMIA">Miami, FL (KMIA)</option>
-      <option value="KATL">Atlanta, GA (KATL)</option>
-      <option value="KMSY">New Orleans, LA (KMSY)</option>
-      <option value="KDFW">Dallas/Fort Worth, TX (KDFW)</option>
-      <option value="KBNA">Nashville, TN (KBNA)</option>
-      <option value="KSDF">Louisville, KY (KSDF)</option>
-      <option value="MMMX">Mexico City, MX (MMMX)</option>
-      <option value="MGGT">Guatemala City, GT (MGGT)</option>
-      <option value="MUHA">Havana, CU (MUHA)</option>
-      <option value="TJSJ">San Juan, PR (TJSJ)</option>
-    </select>
-    <div class="weather-info">
-      <h2 id="airport-name">Sanford, FL (KSFB)</h2>
-<div class="wx-section">
-  <h3>METAR</h3>
-  <div id="metar" class="wx-translated">Loading...</div>
-</div>
-
-<div class="wx-section">
-  <h3>TAF</h3>
-  <div id="taf" class="wx-translated">Loading...</div>
-</div>
-    </div>
-  </div>
 
   <div id="map-container">
     <iframe
