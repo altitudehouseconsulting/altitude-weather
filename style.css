@@ -28,6 +28,11 @@ body {
   border-radius: 5px;
 }
 
+#map-container {
+  flex-grow: 1;
+  height: 100%;
+}
+
 .weather-info pre {
   background-color: #eef3f9;
   padding: 0.5rem;
@@ -51,8 +56,17 @@ body {
   overflow-y: auto;
 }
 
-
-#map-container {
-  flex-grow: 1;
-  height: 100%;
+.wx-translated {
+  background-color: #eef3f9;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+  max-height: 200px;         /* Make scrollable */
+  overflow-y: auto;          /* Enable vertical scroll */
 }
+
+
+
