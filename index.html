@@ -12,18 +12,31 @@
   <div id="sidebar">
     <h1>Flight Weather</h1>
     <label for="icao-select">Select Airport:</label>
-    <select id="icao-select">
-      <option value="KMIA">Miami, FL (KMIA)</option>
-      <option value="KATL">Atlanta, GA (KATL)</option>
-      <option value="KMSY">New Orleans, LA (KMSY)</option>
-      <option value="KDFW">Dallas/Fort Worth, TX (KDFW)</option>
-      <option value="KBNA">Nashville, TN (KBNA)</option>
-      <option value="KSDF">Louisville, KY (KSDF)</option>
-      <option value="MMMX">Mexico City, MX (MMMX)</option>
-      <option value="MGGT">Guatemala City, GT (MGGT)</option>
-      <option value="MUHA">Havana, CU (MUHA)</option>
-      <option value="TJSJ">San Juan, PR (TJSJ)</option>
-    </select>
+   <select id="icao-select">
+  <optgroup label="North Florida">
+    <option value="KJAX">Jacksonville International Airport (KJAX)</option>
+    <option value="KVPS">Destin–Fort Walton Beach Airport (KVPS)</option>
+    <option value="KPNS">Pensacola International Airport (KPNS)</option>
+    <option value="KTLH">Tallahassee International Airport (KTLH)</option>
+    <option value="KVQQ">Cecil Airport (KVQQ)</option>
+  </optgroup>
+
+  <optgroup label="Central Florida">
+    <option value="KMCO">Orlando International Airport (KMCO)</option>
+    <option value="KSFB">Orlando Sanford International Airport (KSFB)</option>
+    <option value="KMLB">Melbourne Orlando International Airport (KMLB)</option>
+    <option value="KDAB">Daytona Beach International Airport (KDAB)</option>
+    <option value="KLEE">Leesburg International Airport (KLEE)</option>
+  </optgroup>
+
+  <optgroup label="South Florida">
+    <option value="KMIA">Miami International Airport (KMIA)</option>
+    <option value="KFLL">Fort Lauderdale–Hollywood Intl (KFLL)</option>
+    <option value="KRSW">Southwest Florida International Airport (KRSW)</option>
+    <option value="KEYW">Key West International Airport (KEYW)</option>
+    <option value="KTMB">Miami Executive Airport (KTMB)</option>
+  </optgroup>
+</select>
     <div class="weather-info">
       <h2 id="airport-name">Miami, FL (KMIA)</h2>
 <div class="wx-section">
