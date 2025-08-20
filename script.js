@@ -1,5 +1,5 @@
 // Replace with your actual AVWX API key
-const API_KEY = 'glW3LNiEIa1bKVWjgjg_U4RcbAdhusDhO6JOwN9rLbM';
+const API_KEY = 'Bearer glW3LNiEIa1bKVWjgjg_U4RcbAdhusDhO6JOwN9rLbM';
 const headers = {
   Authorization: `Bearer ${API_KEY}`
 };
