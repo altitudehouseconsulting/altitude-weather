@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Airport Weather Report</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <header>
+    <h2 id="airport-name">Loading...</h2>
+    <div class="unit-toggles">
+      <label><input type="checkbox" id="temp-toggle" /> Show °F</label>
+      <label><input type="checkbox" id="wind-toggle" /> Show mph</label>
+      <select id="icao-select"></select>
+      <button onclick="exportForecast()">Export PDF</button>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <h3>Current Weather</h3>
+      <div id="current-weather">Loading...</div>
+    </section>
+
+    <section>
+      <h3>7-Day Forecast & History</h3>
+      <div class="weather-block" id="forecast-days"></div>
+    </section>
+
+    <section>
+      <h3>Weather Charts</h3>
+      <canvas id="tempChart"></canvas>
+      <canvas id="windChart"></canvas>
+    </section>
+
+    <section>
+      <h3>Raw API Data</h3>
+      <div class="raw-block" id="raw-json">Loading...</div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

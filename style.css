@@ -1,53 +1,41 @@
-body {
-  margin: 0;
-  display: flex;
-  height: 100vh;
-  font-family: Arial, sans-serif;
-}
-
-#sidebar {
-  width: 300px;
-  background-color: #f4f9fc;
+body { margin: 0; font-family: Arial, sans-serif; background: #eef3f9; }
+header {
+  background-color: #1e3a5f;
+  color: white;
   padding: 1rem;
-  border-right: 1px solid #ccc;
-  box-sizing: border-box;
-  overflow-y: auto;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  align-items: center;
 }
-
-#sidebar h1 {
-  color: #1e3a5f;
-  margin-top: 0;
+.unit-toggles { display: flex; gap: 10px; align-items: center; color: white; }
+main { padding: 1rem; }
+.weather-block {
+  display: flex;
+  overflow-x: auto;
+  gap: 1rem;
+  padding: 1rem 0;
 }
-
-#icao-select {
-  width: 100%;
-  padding: 0.5rem;
-  font-size: 1rem;
-  margin-bottom: 1rem;
-  border-radius: 5px;
+.day-card {
+  flex: 0 0 auto;
+  min-width: 200px;
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
 }
-
-#map-container {
-  flex-grow: 1;
-  height: 100%;
-}
-
-.weather-info {
-  font-size: 0.9rem;
-}
-
-.wx-section {
-  margin-bottom: 1.5rem;
-}
-
-#current-weather, #forecast {
-  background-color: #eef3f9;
-  padding: 0.75rem;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  line-height: 1.4;
-  overflow-wrap: break-word;
+.raw-block {
+  margin-top: 2rem;
+  background: #f4f4f4;
+  padding: 1rem;
+  border-radius: 8px;
+  font-family: monospace;
   white-space: pre-wrap;
-  max-height: 300px;
+  max-height: 400px;
   overflow-y: auto;
+}
+canvas {
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 2rem;
 }
