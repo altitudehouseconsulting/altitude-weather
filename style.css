@@ -1,186 +1,51 @@
 /* ====================================================================
    Compact, left-panel-first layout (no tall header/footer)
    ==================================================================== */
-:root {
-  --brand-900: #0f2a43;
-  --brand-700: #1e3a5f;
-  --brand-100: #eef3f9;
-  --card-bg: #ffffff;
+:root { --brand-900:#0f2a43; --brand-700:#1e3a5f; --brand-100:#eef3f9; --card-bg:#ffffff; }
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ height:100%; margin:0; }
+body{ font-family:Arial, sans-serif; background:var(--brand-100); color:#0c1320; line-height:1.35; }
+h1,h2,h3{ margin:0.25rem 0 0.5rem; line-height:1.15; }
+.select,.btn{ height:38px; padding:0 0.75rem; border:1px solid #c9d4e3; border-radius:8px; background:#fff; }
+.btn{ cursor:pointer; }
+
+.layout-two-col{ display:grid; grid-template-columns:320px 1fr; min-height:100vh; }
+
+.sidebar{
+  background:#f7f9fc; border-right:1px solid #e1e8f0; padding:1rem;
+  display:flex; flex-direction:column; height:100vh; overflow-y:auto;
 }
+.brand{ font-size:1.25rem; color:var(--brand-700); }
+.label{ display:block; margin-top:0.5rem; margin-bottom:0.25rem; }
+.actions{ margin:0.75rem 0 1rem; }
+.weather-info{ display:grid; gap:0.75rem; flex:1; min-height:0; }
+.section-title{ font-weight:600; color:#162236; }
 
-*,
-*::before,
-*::after { box-sizing: border-box; }
+.map-container{ min-height:100vh; width:100%; display:block; }
+#windy{ display:block; border:0; }
 
-html, body { height: 100%; margin: 0; }
+.weather-block{ display:flex; gap:0.75rem; overflow-x:auto; padding-bottom:0.25rem; }
+.day-card{ flex:0 0 auto; min-width:180px; background:var(--card-bg); border:1px solid #e8edf4; border-radius:10px; padding:0.75rem; text-align:center; }
 
-body {
-  font-family: Arial, sans-serif;
-  background: var(--brand-100);
-  color: #0c1320;
-  line-height: 1.35;
+.layout-with-sidebar{ display:grid; grid-template-columns:320px 1fr; min-height:100vh; }
+.content{ padding:1rem; display:grid; gap:1rem; }
+.content-scroll{ overflow:auto; }
+.unit-toggles{ display:flex; gap:0.5rem; align-items:center; margin:0.5rem 0; }
+.toggle{ display:flex; gap:0.25rem; align-items:center; }
+
+.raw-block{ background:#f4f6fa; padding:0.75rem; border-radius:8px; font-family:ui-monospace,Menlo,Consolas,monospace; white-space:pre-wrap; max-height:400px; overflow-y:auto; }
+
+.table-wrap{ overflow-x:auto; background:#fff; border:1px solid #e8edf4; border-radius:8px; padding:0.5rem; }
+table.raw{ width:100%; border-collapse:collapse; font-size:0.92rem; }
+table.raw th,table.raw td{ padding:0.5rem 0.6rem; border-bottom:1px solid #eef2f7; text-align:left; vertical-align:top; }
+table.raw th{ white-space:nowrap; font-weight:600; }
+table.raw thead th{ position:sticky; top:0; background:#f7f9fc; z-index:1; }
+
+canvas{ background:#fff; border:1px solid #e8edf4; border-radius:8px; margin-bottom:1rem; }
+#tempChart,#windChart{ width:100% !important; height:400px !important; max-width:1000px; margin:0 auto 1rem; }
+
+@media (max-width:900px){
+  .layout-two-col,.layout-with-sidebar{ grid-template-columns:1fr; }
+  .map-container{ min-height:60vh; }
+  .sidebar{ height:auto; max-height:none; }
 }
-
-h1, h2, h3 { margin: 0.25rem 0 0.5rem; line-height: 1.15; }
-
-.select, .btn {
-  height: 38px;
-  padding: 0 0.75rem;
-  border: 1px solid #c9d4e3;
-  border-radius: 8px;
-  background: #fff;
-}
-.btn { cursor: pointer; }
-
-/* ===========================
-   Home: sidebar + map
-   =========================== */
-.layout-two-col {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  min-height: 100vh;
-}
-
-/* Sidebar is the header/control panel */
-.sidebar {
-  background: #f7f9fc;
-  border-right: 1px solid #e1e8f0;
-  padding: 1rem;
-  overflow: auto;
-}
-.brand { font-size: 1.25rem; color: var(--brand-700); }
-
-.label { display: block; margin-top: 0.5rem; margin-bottom: 0.25rem; }
-.actions { margin: 0.75rem 0 1rem; }
-
-.weather-info { display: grid; gap: 0.75rem; }
-.section-title { font-weight: 600; color: #162236; }
-
-.map-container { min-height: 100vh; width: 100%; display: block; }
-#windy { display: block; border: 0; }
-
-.weather-block {
-  display: flex;
-  gap: 0.75rem;
-  overflow-x: auto;
-  padding-bottom: 0.25rem;
-}
-.day-card {
-  flex: 0 0 auto;
-  min-width: 180px;
-  background: var(--card-bg);
-  border: 1px solid #e8edf4;
-  border-radius: 10px;
-  padding: 0.75rem;
-  text-align: center;
-}
-
-/* ===============================
-   Details page with left sidebar
-   =============================== */
-.layout-with-sidebar {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  min-height: 100vh;
-}
-.content {
-  padding: 1rem;
-  display: grid;
-  gap: 1rem;
-}
-.content-scroll { overflow: auto; }
-
-.unit-toggles { display: flex; gap: 0.5rem; align-items: center; margin: 0.5rem 0; }
-.toggle { display: flex; gap: 0.25rem; align-items: center; }
-
-.raw-block {
-  background: #f4f6fa;
-  padding: 0.75rem;
-  border-radius: 8px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-  white-space: pre-wrap;
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-canvas {
-  background: #fff;
-  border: 1px solid #e8edf4;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-}
-
-/* ==================
-   Responsive tweaks
-   ================== */
-@media (max-width: 900px) {
-  .layout-two-col,
-  .layout-with-sidebar {
-    grid-template-columns: 1fr;
-  }
-  .map-container { min-height: 60vh; }
-}
-
-/* ===== Sidebar independent scroll fix ===== */
-.sidebar {
-  /* Full-height column next to the map */
-  display: flex;
-  flex-direction: column;
-  height: 100vh;        /* occupy full viewport height */
-  overflow-y: auto;     /* allow vertical scrolling inside */
-}
-
-/* Let the info/forecast area grow and scroll properly */
-.weather-info {
-  display: grid;
-  gap: 0.75rem;
-  flex: 1;              /* take remaining vertical space */
-  min-height: 0;        /* enable inner overflow */
-}
-
-/* Mobile: stack layout; sidebar should auto-size */
-@media (max-width: 900px) {
-  .sidebar {
-    height: auto;
-    max-height: none;
-  }
-}
-
-/* ===== Tabular raw data styles ===== */
-.table-wrap {
-  overflow-x: auto;
-  background: #fff;
-  border: 1px solid #e8edf4;
-  border-radius: 8px;
-  padding: 0.5rem;
-}
-table.raw {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.92rem;
-}
-table.raw th, table.raw td {
-  padding: 0.5rem 0.6rem;
-  border-bottom: 1px solid #eef2f7;
-  text-align: left;
-  vertical-align: top;
-}
-table.raw th {
-  white-space: nowrap;
-  font-weight: 600;
-}
-table.raw thead th {
-  position: sticky;
-  top: 0;
-  background: #f7f9fc;
-  z-index: 1;
-}
-
-/* ===== Chart sizing adjustments ===== */
-#tempChart, #windChart {
-  width: 100% !important;
-  height: 400px !important;   /* Adjust this height as desired */
-  max-width: 1000px;          /* Optional: cap width */
-  margin: 0 auto 1rem;        /* center if narrower than container */
-}
-

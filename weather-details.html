@@ -9,46 +9,23 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body class="layout-with-sidebar">
-  <!-- Left panel acts as the page header/control center -->
   <aside id="sidebar" class="sidebar">
     <h1 class="brand">Airport Report</h1>
     <h2 id="airport-name" class="airport-title">Loading...</h2>
-
     <div class="unit-toggles">
       <label class="toggle"><input type="checkbox" id="temp-toggle" /> °F</label>
       <label class="toggle"><input type="checkbox" id="wind-toggle" /> mph</label>
     </div>
-
     <label for="icao-select" class="label">Select Airport</label>
     <select id="icao-select" class="select"></select>
-
-    <div class="actions">
-      <button class="btn" onclick="exportForecast()">Export PDF</button>
-    </div>
+    <div class="actions"><button class="btn" onclick="exportForecast()">Export PDF</button></div>
   </aside>
 
   <main class="content content-scroll">
-    <section>
-      <h3>Current Weather</h3>
-      <div id="current-weather" class="current">Loading...</div>
-    </section>
-
-    <section>
-      <h3>7-Day Forecast & History</h3>
-      <div class="weather-block" id="forecast-days" aria-live="polite"></div>
-    </section>
-
-    <section>
-      <h3>Weather Charts</h3>
-      <canvas id="tempChart"></canvas>
-      <canvas id="windChart"></canvas>
-    </section>
-
-    <section>
-      <h3>Raw API Data</h3>
-      <div id="raw-table-container" class="table-wrap">Loading...</div>
-<div class="raw-block" id="raw-json" style="display:none">Loading...</div>
-    </section>
+    <section><h3>Current Weather</h3><div id="current-weather" class="current">Loading...</div></section>
+    <section><h3>7-Day Forecast & History</h3><div class="weather-block" id="forecast-days" aria-live="polite"></div></section>
+    <section><h3>Weather Charts</h3><canvas id="tempChart"></canvas><canvas id="windChart"></canvas></section>
+    <section><h3>Raw API Data</h3><div id="raw-table-container" class="table-wrap">Loading...</div><div class="raw-block" id="raw-json" style="display:none">Loading...</div></section>
   </main>
 
   <script src="script.js"></script>
@@ -59,10 +36,7 @@
       if (icao) {
         window.addEventListener('DOMContentLoaded', () => {
           const sel = document.getElementById('icao-select');
-          if (sel) {
-            sel.value = icao;
-            sel.dispatchEvent(new Event('change'));
-          }
+          if (sel) { sel.value = icao; sel.dispatchEvent(new Event('change')); }
         });
       }
     })();
