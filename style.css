@@ -56,7 +56,10 @@ h1, h2, h3 {
   background: #f7f9fc;
   border-right: 1px solid #e1e8f0;
   padding: 1rem;
-  overflow-y: auto;            /* Scroll only the sidebar if long */
+  display: flex;
+  flex-direction: column;
+  height: 100vh;        /* full height next to map */
+  overflow-y: auto;     /* independent scrolling */
 }
 
 .brand { font-size: 1.25rem; color: var(--brand-700); }
@@ -64,7 +67,12 @@ h1, h2, h3 {
 .label { display: block; margin-top: 0.5rem; margin-bottom: 0.25rem; }
 .actions { margin: 0.5rem 0 1rem 0; }
 
-.weather-info { display: grid; gap: 0.75rem; }
+.weather-info {
+  display: grid;
+  gap: 0.75rem;
+  flex: 1;              /* take up remaining space */
+  min-height: 0;        /* allow inner scrolling */
+}
 .section-title { font-weight: 600; color: #162236; }
 
 .map-container {
