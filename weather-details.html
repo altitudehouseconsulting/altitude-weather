@@ -4,37 +4,37 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Airport Weather Report</title>
-  <!--
-    Compact sticky header with unit toggles.
-    Main content scrolls naturally; no oversized blanks.
-  -->
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
-<body class="layout-report">
-  <header class="site-header">
-    <div class="site-header__left">
-      <h2 id="airport-name" class="airport-title">Loading...</h2>
-    </div>
+<body class="layout-with-sidebar">
+  <!-- Left panel acts as the page header/control center -->
+  <aside id="sidebar" class="sidebar">
+    <h1 class="brand">Airport Report</h1>
+    <h2 id="airport-name" class="airport-title">Loading...</h2>
 
     <div class="unit-toggles">
       <label class="toggle"><input type="checkbox" id="temp-toggle" /> °F</label>
       <label class="toggle"><input type="checkbox" id="wind-toggle" /> mph</label>
-      <select id="icao-select" class="select"></select>
+    </div>
+
+    <label for="icao-select" class="label">Select Airport</label>
+    <select id="icao-select" class="select"></select>
+
+    <div class="actions">
       <button class="btn" onclick="exportForecast()">Export PDF</button>
     </div>
-  </header>
+  </aside>
 
-  <main class="content">
+  <main class="content content-scroll">
     <section>
       <h3>Current Weather</h3>
       <div id="current-weather" class="current">Loading...</div>
     </section>
 
     <section>
-      <h3>7‑Day Forecast & History</h3>
-      <!-- script.js writes here when present -->
+      <h3>7-Day Forecast & History</h3>
       <div class="weather-block" id="forecast-days" aria-live="polite"></div>
     </section>
 
@@ -46,13 +46,13 @@
 
     <section>
       <h3>Raw API Data</h3>
-      <div class="raw-block" id="raw-json">Loading...</div>
+      <div id="raw-table-container" class="table-wrap">Loading...</div>
+<div class="raw-block" id="raw-json" style="display:none">Loading...</div>
     </section>
   </main>
 
   <script src="script.js"></script>
   <script>
-    // Optional: allow pre-select via ?icao=
     (function () {
       const params = new URLSearchParams(window.location.search);
       const icao = params.get('icao');
@@ -61,8 +61,7 @@
           const sel = document.getElementById('icao-select');
           if (sel) {
             sel.value = icao;
-            const evt = new Event('change');
-            sel.dispatchEvent(evt);
+            sel.dispatchEvent(new Event('change'));
           }
         });
       }

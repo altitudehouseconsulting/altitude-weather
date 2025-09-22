@@ -1,5 +1,5 @@
 /* ====================================================================
-   Global layout fixes to remove wasted space and make UI compact
+   Compact, left-panel-first layout (no tall header/footer)
    ==================================================================== */
 :root {
   --brand-900: #0f2a43;
@@ -12,10 +12,7 @@
 *::before,
 *::after { box-sizing: border-box; }
 
-html, body {
-  height: 100%;
-  margin: 0;
-}
+html, body { height: 100%; margin: 0; }
 
 body {
   font-family: Arial, sans-serif;
@@ -24,13 +21,8 @@ body {
   line-height: 1.35;
 }
 
-/* Tighten headings to avoid huge vertical blocks */
-h1, h2, h3 {
-  margin: 0.25rem 0 0.5rem 0;
-  line-height: 1.15;
-}
+h1, h2, h3 { margin: 0.25rem 0 0.5rem; line-height: 1.15; }
 
-/* Buttons and inputs */
 .select, .btn {
   height: 38px;
   padding: 0 0.75rem;
@@ -38,51 +30,35 @@ h1, h2, h3 {
   border-radius: 8px;
   background: #fff;
 }
-.btn {
-  cursor: pointer;
-}
+.btn { cursor: pointer; }
 
 /* ===========================
-   Two‑column app (index.html)
+   Home: sidebar + map
    =========================== */
 .layout-two-col {
   display: grid;
-  grid-template-columns: 320px 1fr;   /* Sidebar + Map */
-  grid-template-rows: 100%;
-  min-height: 100%;
+  grid-template-columns: 320px 1fr;
+  min-height: 100vh;
 }
 
+/* Sidebar is the header/control panel */
 .sidebar {
   background: #f7f9fc;
   border-right: 1px solid #e1e8f0;
   padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;        /* full height next to map */
-  overflow-y: auto;     /* independent scrolling */
+  overflow: auto;
 }
-
 .brand { font-size: 1.25rem; color: var(--brand-700); }
 
 .label { display: block; margin-top: 0.5rem; margin-bottom: 0.25rem; }
-.actions { margin: 0.5rem 0 1rem 0; }
+.actions { margin: 0.75rem 0 1rem; }
 
-.weather-info {
-  display: grid;
-  gap: 0.75rem;
-  flex: 1;              /* take up remaining space */
-  min-height: 0;        /* allow inner scrolling */
-}
+.weather-info { display: grid; gap: 0.75rem; }
 .section-title { font-weight: 600; color: #162236; }
 
-.map-container {
-  min-height: 100vh;          /* Fill viewport height */
-  width: 100%;
-  display: block;
-}
+.map-container { min-height: 100vh; width: 100%; display: block; }
 #windy { display: block; border: 0; }
 
-/* Cards/blocks */
 .weather-block {
   display: flex;
   gap: 0.75rem;
@@ -100,43 +76,22 @@ h1, h2, h3 {
 }
 
 /* ===============================
-   Report page (weather-details)
+   Details page with left sidebar
    =============================== */
-.layout-report {
-  min-height: 100%;
+.layout-with-sidebar {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-columns: 320px 1fr;
+  min-height: 100vh;
 }
-
-.site-header {
-  position: sticky;   /* compact sticky bar; does not consume big space */
-  top: 0;
-  z-index: 10;
-  background: var(--brand-700);
-  color: #fff;
-  padding: 0.5rem 0.75rem;     /* small padding to avoid tall header */
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  border-bottom: 1px solid #12304d;
-}
-
-.airport-title { font-size: 1rem; font-weight: 600; }
-
-.unit-toggles {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  color: #fff;
-}
-.toggle { display: flex; gap: 0.25rem; align-items: center; }
-
 .content {
   padding: 1rem;
   display: grid;
   gap: 1rem;
 }
+.content-scroll { overflow: auto; }
+
+.unit-toggles { display: flex; gap: 0.5rem; align-items: center; margin: 0.5rem 0; }
+.toggle { display: flex; gap: 0.25rem; align-items: center; }
 
 .raw-block {
   background: #f4f6fa;
@@ -148,7 +103,6 @@ h1, h2, h3 {
   overflow-y: auto;
 }
 
-/* Charts */
 canvas {
   background: #fff;
   border: 1px solid #e8edf4;
@@ -160,10 +114,73 @@ canvas {
    Responsive tweaks
    ================== */
 @media (max-width: 900px) {
-  .layout-two-col {
-    grid-template-columns: 1fr;     /* Stack: map first */
-    grid-auto-rows: auto;
+  .layout-two-col,
+  .layout-with-sidebar {
+    grid-template-columns: 1fr;
   }
-  .map-container { order: 0; min-height: 60vh; }
-  .sidebar { order: 1; }
+  .map-container { min-height: 60vh; }
 }
+
+/* ===== Sidebar independent scroll fix ===== */
+.sidebar {
+  /* Full-height column next to the map */
+  display: flex;
+  flex-direction: column;
+  height: 100vh;        /* occupy full viewport height */
+  overflow-y: auto;     /* allow vertical scrolling inside */
+}
+
+/* Let the info/forecast area grow and scroll properly */
+.weather-info {
+  display: grid;
+  gap: 0.75rem;
+  flex: 1;              /* take remaining vertical space */
+  min-height: 0;        /* enable inner overflow */
+}
+
+/* Mobile: stack layout; sidebar should auto-size */
+@media (max-width: 900px) {
+  .sidebar {
+    height: auto;
+    max-height: none;
+  }
+}
+
+/* ===== Tabular raw data styles ===== */
+.table-wrap {
+  overflow-x: auto;
+  background: #fff;
+  border: 1px solid #e8edf4;
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+table.raw {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+table.raw th, table.raw td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid #eef2f7;
+  text-align: left;
+  vertical-align: top;
+}
+table.raw th {
+  white-space: nowrap;
+  font-weight: 600;
+}
+table.raw thead th {
+  position: sticky;
+  top: 0;
+  background: #f7f9fc;
+  z-index: 1;
+}
+
+/* ===== Chart sizing adjustments ===== */
+#tempChart, #windChart {
+  width: 100% !important;
+  height: 400px !important;   /* Adjust this height as desired */
+  max-width: 1000px;          /* Optional: cap width */
+  margin: 0 auto 1rem;        /* center if narrower than container */
+}
+

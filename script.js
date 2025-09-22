@@ -119,6 +119,7 @@ function drawCharts(data) {
   const wind  = data.map(d => Number(convertWind(d.wind)));
 
   if (tempChart) tempChart.destroy();
+  if (windChart) tempChart = null
   if (windChart) windChart.destroy();
 
   /* Chart.js will pick default colors; we don't enforce specific colors */
@@ -131,7 +132,7 @@ function drawCharts(data) {
         { label: `Low Temp (${unitLabel('temp')})`,  data: lows,  fill: false }
       ]
     }
-  });
+  }, options: { responsive: true, maintainAspectRatio: false } });
 
   windChart = new Chart(windCanvas, {
     type: 'bar',
@@ -139,12 +140,85 @@ function drawCharts(data) {
       labels,
       datasets: [{ label: `Wind Speed (${unitLabel('wind')})`, data: wind }]
     }
-  });
+  }, options: { responsive: true, maintainAspectRatio: false } });
 }
 
 /* ------------------------------
    Data loading
    ------------------------------ */
+
+/* ------------------------------
+   Raw API -> Table rendering
+   ------------------------------ */
+function setContainerHTML(el, html) {
+  if (el) { el.innerHTML = html; }
+}
+
+function renderRawTables(api) {
+  const container = document.getElementById('raw-table-container');
+  if (!container || !api) return;
+
+  // Current weather table (key/value)
+  const cw = api.current_weather || {};
+  const currentRows = Object.entries(cw).map(([k, v]) => {
+    return `<tr><th>${escapeHtml(k)}</th><td>${String(v)}</td></tr>`;
+  }).join('');
+  const currentTable = `
+    <h4 style="margin:0.25rem 0 0.5rem;">Current Weather (raw)</h4>
+    <table class="raw">
+      <tbody>${currentRows || '<tr><td colspan="2">No data</td></tr>'}</tbody>
+    </table>
+  `;
+
+  // Daily summary table (time series)
+  const d = api.daily || {};
+  const rows = [];
+  const N = Array.isArray(d.time) ? d.time.length : 0;
+  for (let i = 0; i < N; i++) {
+    rows.push(`
+      <tr>
+        <td>${d.time?.[i] ?? ''}</td>
+        <td>${safeNum(d.temperature_2m_max?.[i])}</td>
+        <td>${safeNum(d.temperature_2m_min?.[i])}</td>
+        <td>${safeNum(d.precipitation_sum?.[i])}</td>
+        <td>${safeNum(d.windspeed_10m_max?.[i])}</td>
+        <td>${d.weathercode?.[i] ?? ''}</td>
+      </tr>
+    `);
+  }
+  const dailyTable = `
+    <h4 style="margin:1rem 0 0.5rem;">Daily Summary (raw)</h4>
+    <table class="raw">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Temp Max (°C)</th>
+          <th>Temp Min (°C)</th>
+          <th>Precip (mm)</th>
+          <th>Wind Max (km/h)</th>
+          <th>Wx Code</th>
+        </tr>
+      </thead>
+      <tbody>${rows.join('') || '<tr><td colspan="6">No data</td></tr>'}</tbody>
+    </table>
+  `;
+
+  setContainerHTML(container, currentTable + dailyTable);
+
+  // Keep JSON available for debugging (hidden)
+  const rawJsonEl = document.getElementById('raw-json');
+  if (rawJsonEl) rawJsonEl.textContent = JSON.stringify(api, null, 2);
+}
+
+function safeNum(n) { return (typeof n === 'number') ? n : ''; }
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 function loadWeather(code) {
   const airport = airports[code] || airports["KMCO"];
   if (airportNameEl) airportNameEl.textContent = airport.name;
@@ -163,7 +237,7 @@ function loadWeather(code) {
         code: data.daily.weathercode[i]
       }));
       lastCurrent = data.current_weather || {};
-      if (rawJsonEl) rawJsonEl.textContent = JSON.stringify(data, null, 2);
+      renderRawTables(data);
       renderAll();
     })
     .catch(err => {
@@ -180,7 +254,7 @@ function loadWeather(code) {
   if (select) {
     select.value = select.value || "KMCO";
     loadWeather(select.value);
-    // Auto-refresh every 10 minutes (only when selector exists, i.e., on pages that display data)
+    // Auto-refresh every 10 minutes
     setInterval(() => loadWeather(select.value), 10 * 60 * 1000);
   }
 })();
@@ -199,6 +273,4 @@ function exportForecast() {
   });
   doc.save("weather-forecast.pdf");
 }
-
-// Expose for button on details page without polluting global too much
 window.exportForecast = exportForecast;

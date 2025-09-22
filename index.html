@@ -4,18 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aviation Weather Dashboard</title>
-  <!--
-    Minimal, responsive layout:
-    - Compact sidebar (sticky on desktop, collapses on small screens)
-    - Map fills the remaining space
-    - No oversized header/footer; zero wasted vertical space
-  -->
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body class="layout-two-col">
-  <!-- Sidebar: compact controls + current/forecast summaries -->
+  <!-- Left panel now functions as the "header" zone -->
   <aside id="sidebar" class="sidebar">
     <h1 class="brand">Flight Weather</h1>
 
@@ -23,7 +17,7 @@
     <select id="icao-select" class="select"></select>
 
     <div class="actions">
-      <button class="btn" onclick="openFullReport()">View Full Report</button>
+      <button class="btn" onclick="openFullReport()">Full Report</button>
     </div>
 
     <div class="weather-info">
@@ -35,14 +29,12 @@
       </div>
 
       <div class="wx-section">
-        <h3 class="section-title">7‑Day</h3>
-        <!-- Note: script.js will gracefully detect and render to #forecast (fallback when #forecast-days does not exist) -->
+        <h3 class="section-title">7-Day</h3>
         <div id="forecast" class="weather-block" aria-live="polite">Loading...</div>
       </div>
     </div>
   </aside>
 
-  <!-- Map: fills all remaining space with no blank areas -->
   <main id="map-container" class="map-container" aria-label="Windy interactive weather map">
     <iframe
       id="windy"
@@ -56,9 +48,7 @@
 
   <script src="script.js"></script>
   <script>
-    // Simple handler for the "Full Report" button
     function openFullReport() {
-      // Preserve the currently selected airport if available
       const sel = document.getElementById('icao-select');
       const code = sel && sel.value ? sel.value : 'KMCO';
       const url = new URL('weather-details.html', window.location.href);
