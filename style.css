@@ -176,11 +176,3 @@ table.raw thead th {
   z-index: 1;
 }
 
-/* ===== Chart sizing adjustments ===== */
-#tempChart, #windChart {
-  width: 100% !important;
-  height: 400px !important;   /* Adjust this height as desired */
-  max-width: 1000px;          /* Optional: cap width */
-  margin: 0 auto 1rem;        /* center if narrower than container */
-}
-

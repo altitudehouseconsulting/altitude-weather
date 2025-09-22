@@ -132,7 +132,7 @@ function drawCharts(data) {
         { label: `Low Temp (${unitLabel('temp')})`,  data: lows,  fill: false }
       ]
     }
-  }, options: { responsive: true, maintainAspectRatio: false } });
+  });
 
   windChart = new Chart(windCanvas, {
     type: 'bar',
@@ -140,7 +140,7 @@ function drawCharts(data) {
       labels,
       datasets: [{ label: `Wind Speed (${unitLabel('wind')})`, data: wind }]
     }
-  }, options: { responsive: true, maintainAspectRatio: false } });
+  });
 }
 
 /* ------------------------------
