@@ -1,16 +1,16 @@
 /* =====================================================================
-   Safer, defensive script:
+   Safer, defensive script (fixed):
    - Works on BOTH index.html and weather-details.html
-   - Guards for missing elements (prevents JS errors that can break layout)
-   - Keeps header/footer compact by avoiding runtime layout bugs
+   - Guards for missing elements
+   - Proper Chart.js options placement
    ===================================================================== */
 
 /* ------------------------------
-   DOM helpers (safe selectors)
+   DOM helpers
    ------------------------------ */
 const $ = (id) => document.getElementById(id);
 
-/* Known airport list (extend as needed) */
+/* Airports */
 const airports = {
   KMCO: { name: "Orlando Intl (KMCO)", lat: 28.4312, lon: -81.3081 },
   KSFB: { name: "Sanford Intl (KSFB)", lat: 28.7776, lon: -81.2375 },
@@ -31,38 +31,29 @@ let tempChart, windChart;
 let lastForecast = [];
 let lastCurrent = {};
 
-/* Elements (guard each in use) */
+/* Elements */
 const select = $("icao-select");
 const airportNameEl = $("airport-name");
 const currentWeatherEl = $("current-weather");
-
-// Forecast container can be either #forecast-days (details page) or #forecast (index page)
 const forecastContainer = $("forecast-days") || $("forecast");
 const rawJsonEl = $("raw-json");
 const tempToggle = $("temp-toggle");
 const windToggle = $("wind-toggle");
 
-/* Populate airport selector if present */
+/* Populate selector */
 if (select) {
   Object.entries(airports).forEach(([code, data]) => {
-    const option = document.createElement("option");
-    option.value = code;
-    option.textContent = data.name;
-    select.appendChild(option);
+    const opt = document.createElement("option");
+    opt.value = code; opt.textContent = data.name;
+    select.appendChild(opt);
   });
-
-  // Default selection
   if (!select.value) select.value = "KMCO";
+  select.addEventListener("change", () => loadWeather(select.value));
 }
-
-/* Event listeners (only if toggles/select exist on this page) */
-if (select) select.addEventListener("change", () => loadWeather(select.value));
 if (tempToggle) tempToggle.addEventListener("change", () => renderAll());
 if (windToggle) windToggle.addEventListener("change", () => renderAll());
 
-/* ------------------------------
-   Unit conversion utilities
-   ------------------------------ */
+/* Unit helpers */
 function convertTemp(c) {
   if (typeof c !== "number") return "—";
   return tempToggle && tempToggle.checked ? (c * 9/5 + 32).toFixed(1) : c.toFixed(1);
@@ -76,15 +67,12 @@ function unitLabel(kind) {
   return (windToggle && windToggle.checked) ? 'mph' : 'km/h';
 }
 
-/* ------------------------------
-   Rendering
-   ------------------------------ */
+/* Rendering */
 function renderAll() {
   renderCurrent();
   renderForecast(lastForecast);
   drawCharts(lastForecast);
 }
-
 function renderCurrent() {
   if (!currentWeatherEl || !lastCurrent || typeof lastCurrent.temperature === "undefined") return;
   const cw = lastCurrent;
@@ -93,7 +81,6 @@ function renderCurrent() {
      Windspeed: ${convertWind(cw.windspeed)} ${unitLabel('wind')}<br>
      Condition: ${icons[cw.weathercode] || "—"} (Code ${cw.weathercode})`;
 }
-
 function renderForecast(data) {
   if (!forecastContainer || !Array.isArray(data)) return;
   forecastContainer.innerHTML = data.map(day => `
@@ -106,11 +93,9 @@ function renderForecast(data) {
       Wind: ${convertWind(day.wind)} ${unitLabel('wind')}
     </div>`).join("");
 }
-
 function drawCharts(data) {
-  // Only draw on details page where canvases exist
-  const tempCanvas = $("tempChart");
-  const windCanvas = $("windChart");
+  const tempCanvas = document.getElementById("tempChart");
+  const windCanvas = document.getElementById("windChart");
   if (!tempCanvas || !windCanvas || !Array.isArray(data) || !window.Chart) return;
 
   const labels = data.map(d => d.date);
@@ -119,10 +104,8 @@ function drawCharts(data) {
   const wind  = data.map(d => Number(convertWind(d.wind)));
 
   if (tempChart) tempChart.destroy();
-  if (windChart) tempChart = null
   if (windChart) windChart.destroy();
 
-  /* Chart.js will pick default colors; we don't enforce specific colors */
   tempChart = new Chart(tempCanvas, {
     type: 'line',
     data: {
@@ -131,7 +114,8 @@ function drawCharts(data) {
         { label: `High Temp (${unitLabel('temp')})`, data: highs, fill: false },
         { label: `Low Temp (${unitLabel('temp')})`,  data: lows,  fill: false }
       ]
-    }
+    },
+    options: { responsive: true, maintainAspectRatio: false }
   });
 
   windChart = new Chart(windCanvas, {
@@ -139,86 +123,12 @@ function drawCharts(data) {
     data: {
       labels,
       datasets: [{ label: `Wind Speed (${unitLabel('wind')})`, data: wind }]
-    }
+    },
+    options: { responsive: true, maintainAspectRatio: false }
   });
 }
 
-/* ------------------------------
-   Data loading
-   ------------------------------ */
-
-/* ------------------------------
-   Raw API -> Table rendering
-   ------------------------------ */
-function setContainerHTML(el, html) {
-  if (el) { el.innerHTML = html; }
-}
-
-function renderRawTables(api) {
-  const container = document.getElementById('raw-table-container');
-  if (!container || !api) return;
-
-  // Current weather table (key/value)
-  const cw = api.current_weather || {};
-  const currentRows = Object.entries(cw).map(([k, v]) => {
-    return `<tr><th>${escapeHtml(k)}</th><td>${String(v)}</td></tr>`;
-  }).join('');
-  const currentTable = `
-    <h4 style="margin:0.25rem 0 0.5rem;">Current Weather (raw)</h4>
-    <table class="raw">
-      <tbody>${currentRows || '<tr><td colspan="2">No data</td></tr>'}</tbody>
-    </table>
-  `;
-
-  // Daily summary table (time series)
-  const d = api.daily || {};
-  const rows = [];
-  const N = Array.isArray(d.time) ? d.time.length : 0;
-  for (let i = 0; i < N; i++) {
-    rows.push(`
-      <tr>
-        <td>${d.time?.[i] ?? ''}</td>
-        <td>${safeNum(d.temperature_2m_max?.[i])}</td>
-        <td>${safeNum(d.temperature_2m_min?.[i])}</td>
-        <td>${safeNum(d.precipitation_sum?.[i])}</td>
-        <td>${safeNum(d.windspeed_10m_max?.[i])}</td>
-        <td>${d.weathercode?.[i] ?? ''}</td>
-      </tr>
-    `);
-  }
-  const dailyTable = `
-    <h4 style="margin:1rem 0 0.5rem;">Daily Summary (raw)</h4>
-    <table class="raw">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Temp Max (°C)</th>
-          <th>Temp Min (°C)</th>
-          <th>Precip (mm)</th>
-          <th>Wind Max (km/h)</th>
-          <th>Wx Code</th>
-        </tr>
-      </thead>
-      <tbody>${rows.join('') || '<tr><td colspan="6">No data</td></tr>'}</tbody>
-    </table>
-  `;
-
-  setContainerHTML(container, currentTable + dailyTable);
-
-  // Keep JSON available for debugging (hidden)
-  const rawJsonEl = document.getElementById('raw-json');
-  if (rawJsonEl) rawJsonEl.textContent = JSON.stringify(api, null, 2);
-}
-
-function safeNum(n) { return (typeof n === 'number') ? n : ''; }
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
+/* Data loading */
 function loadWeather(code) {
   const airport = airports[code] || airports["KMCO"];
   if (airportNameEl) airportNameEl.textContent = airport.name;
@@ -237,7 +147,8 @@ function loadWeather(code) {
         code: data.daily.weathercode[i]
       }));
       lastCurrent = data.current_weather || {};
-      renderRawTables(data);
+      if (typeof renderRawTables === "function") renderRawTables(data);
+      if (rawJsonEl) rawJsonEl.textContent = JSON.stringify(data, null, 2);
       renderAll();
     })
     .catch(err => {
@@ -246,22 +157,16 @@ function loadWeather(code) {
     });
 }
 
-/* ------------------------------
-   Boot
-   ------------------------------ */
+/* Boot */
 (function init() {
-  // If there's a selector, trigger the initial load
   if (select) {
     select.value = select.value || "KMCO";
     loadWeather(select.value);
-    // Auto-refresh every 10 minutes
     setInterval(() => loadWeather(select.value), 10 * 60 * 1000);
   }
 })();
 
-/* ------------------------------
-   Export (used on details page)
-   ------------------------------ */
+/* Export PDF */
 function exportForecast() {
   if (!window.jspdf || !Array.isArray(lastForecast)) return;
   const { jsPDF } = window.jspdf;
