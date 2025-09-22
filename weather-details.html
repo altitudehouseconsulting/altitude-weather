@@ -4,30 +4,38 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Airport Weather Report</title>
+  <!--
+    Compact sticky header with unit toggles.
+    Main content scrolls naturally; no oversized blanks.
+  -->
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
-<body>
-  <header>
-    <h2 id="airport-name">Loading...</h2>
+<body class="layout-report">
+  <header class="site-header">
+    <div class="site-header__left">
+      <h2 id="airport-name" class="airport-title">Loading...</h2>
+    </div>
+
     <div class="unit-toggles">
-      <label><input type="checkbox" id="temp-toggle" /> Show °F</label>
-      <label><input type="checkbox" id="wind-toggle" /> Show mph</label>
-      <select id="icao-select"></select>
-      <button onclick="exportForecast()">Export PDF</button>
+      <label class="toggle"><input type="checkbox" id="temp-toggle" /> °F</label>
+      <label class="toggle"><input type="checkbox" id="wind-toggle" /> mph</label>
+      <select id="icao-select" class="select"></select>
+      <button class="btn" onclick="exportForecast()">Export PDF</button>
     </div>
   </header>
 
-  <main>
+  <main class="content">
     <section>
       <h3>Current Weather</h3>
-      <div id="current-weather">Loading...</div>
+      <div id="current-weather" class="current">Loading...</div>
     </section>
 
     <section>
-      <h3>7-Day Forecast & History</h3>
-      <div class="weather-block" id="forecast-days"></div>
+      <h3>7‑Day Forecast & History</h3>
+      <!-- script.js writes here when present -->
+      <div class="weather-block" id="forecast-days" aria-live="polite"></div>
     </section>
 
     <section>
@@ -43,5 +51,22 @@
   </main>
 
   <script src="script.js"></script>
+  <script>
+    // Optional: allow pre-select via ?icao=
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const icao = params.get('icao');
+      if (icao) {
+        window.addEventListener('DOMContentLoaded', () => {
+          const sel = document.getElementById('icao-select');
+          if (sel) {
+            sel.value = icao;
+            const evt = new Event('change');
+            sel.dispatchEvent(evt);
+          }
+        });
+      }
+    })();
+  </script>
 </body>
 </html>

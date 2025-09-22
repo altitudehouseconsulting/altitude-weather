@@ -1,41 +1,161 @@
-body { margin: 0; font-family: Arial, sans-serif; background: #eef3f9; }
-header {
-  background-color: #1e3a5f;
-  color: white;
-  padding: 1rem;
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  align-items: center;
+/* ====================================================================
+   Global layout fixes to remove wasted space and make UI compact
+   ==================================================================== */
+:root {
+  --brand-900: #0f2a43;
+  --brand-700: #1e3a5f;
+  --brand-100: #eef3f9;
+  --card-bg: #ffffff;
 }
-.unit-toggles { display: flex; gap: 10px; align-items: center; color: white; }
-main { padding: 1rem; }
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: var(--brand-100);
+  color: #0c1320;
+  line-height: 1.35;
+}
+
+/* Tighten headings to avoid huge vertical blocks */
+h1, h2, h3 {
+  margin: 0.25rem 0 0.5rem 0;
+  line-height: 1.15;
+}
+
+/* Buttons and inputs */
+.select, .btn {
+  height: 38px;
+  padding: 0 0.75rem;
+  border: 1px solid #c9d4e3;
+  border-radius: 8px;
+  background: #fff;
+}
+.btn {
+  cursor: pointer;
+}
+
+/* ===========================
+   Two‑column app (index.html)
+   =========================== */
+.layout-two-col {
+  display: grid;
+  grid-template-columns: 320px 1fr;   /* Sidebar + Map */
+  grid-template-rows: 100%;
+  min-height: 100%;
+}
+
+.sidebar {
+  background: #f7f9fc;
+  border-right: 1px solid #e1e8f0;
+  padding: 1rem;
+  overflow-y: auto;            /* Scroll only the sidebar if long */
+}
+
+.brand { font-size: 1.25rem; color: var(--brand-700); }
+
+.label { display: block; margin-top: 0.5rem; margin-bottom: 0.25rem; }
+.actions { margin: 0.5rem 0 1rem 0; }
+
+.weather-info { display: grid; gap: 0.75rem; }
+.section-title { font-weight: 600; color: #162236; }
+
+.map-container {
+  min-height: 100vh;          /* Fill viewport height */
+  width: 100%;
+  display: block;
+}
+#windy { display: block; border: 0; }
+
+/* Cards/blocks */
 .weather-block {
   display: flex;
+  gap: 0.75rem;
   overflow-x: auto;
-  gap: 1rem;
-  padding: 1rem 0;
+  padding-bottom: 0.25rem;
 }
 .day-card {
   flex: 0 0 auto;
-  min-width: 200px;
-  background: white;
-  border-radius: 8px;
-  padding: 1rem;
+  min-width: 180px;
+  background: var(--card-bg);
+  border: 1px solid #e8edf4;
+  border-radius: 10px;
+  padding: 0.75rem;
   text-align: center;
 }
-.raw-block {
-  margin-top: 2rem;
-  background: #f4f4f4;
+
+/* ===============================
+   Report page (weather-details)
+   =============================== */
+.layout-report {
+  min-height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.site-header {
+  position: sticky;   /* compact sticky bar; does not consume big space */
+  top: 0;
+  z-index: 10;
+  background: var(--brand-700);
+  color: #fff;
+  padding: 0.5rem 0.75rem;     /* small padding to avoid tall header */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-bottom: 1px solid #12304d;
+}
+
+.airport-title { font-size: 1rem; font-weight: 600; }
+
+.unit-toggles {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  color: #fff;
+}
+.toggle { display: flex; gap: 0.25rem; align-items: center; }
+
+.content {
   padding: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.raw-block {
+  background: #f4f6fa;
+  padding: 0.75rem;
   border-radius: 8px;
-  font-family: monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   white-space: pre-wrap;
   max-height: 400px;
   overflow-y: auto;
 }
+
+/* Charts */
 canvas {
-  background: white;
+  background: #fff;
+  border: 1px solid #e8edf4;
   border-radius: 8px;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
+}
+
+/* ==================
+   Responsive tweaks
+   ================== */
+@media (max-width: 900px) {
+  .layout-two-col {
+    grid-template-columns: 1fr;     /* Stack: map first */
+    grid-auto-rows: auto;
+  }
+  .map-container { order: 0; min-height: 60vh; }
+  .sidebar { order: 1; }
 }
